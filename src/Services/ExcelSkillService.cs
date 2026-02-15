@@ -414,6 +414,10 @@ public partial class ExcelSkillService
             {
                 errorObj["hint"] = "Merged cells may be interfering. Try clear_range with what='formats' first, or work with a different range.";
             }
+            else if (ex.HResult == unchecked((int)0x80028018))
+            {
+                errorObj["hint"] = "TYPE_E_INVDATAREAD — Excel type library error. This sheet may have COM interop issues. Try a different approach or skip this sheet.";
+            }
 
             var error = errorObj.ToJsonString();
             AddIn.Logger.ToolCall(toolName, argsJson, error);

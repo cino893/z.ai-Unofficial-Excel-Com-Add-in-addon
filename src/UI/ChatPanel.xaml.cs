@@ -186,17 +186,19 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
         }
         finally
         {
-            // Restore Excel state — always, even on error
+            // Restore Excel state — each property independently to prevent
+            // one failure (e.g. Calculation=Auto triggering crash) from leaving
+            // ScreenUpdating=false which freezes the UI.
             _host.Invoke(() =>
             {
                 try
                 {
                     dynamic app = ExcelDnaUtil.Application;
-                    app.Calculation = oldCalculation;
-                    app.EnableEvents = oldEnableEvents;
-                    app.ScreenUpdating = oldScreenUpdating;
+                    try { app.ScreenUpdating = oldScreenUpdating; } catch { }
+                    try { app.EnableEvents = oldEnableEvents; } catch { }
+                    try { app.Calculation = oldCalculation; } catch { }
                 }
-                catch { /* ignore */ }
+                catch { /* host or COM not available */ }
             });
             SetProcessing(false);
         }

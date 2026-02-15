@@ -242,21 +242,28 @@ public partial class ExcelSkillService
             if (sheetFilter != null && !wsName.Equals(sheetFilter, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            foreach (dynamic pt in ws.PivotTables())
+            try
             {
-                string location = "";
-                try { location = pt.TableRange2.Address; } catch { }
-
-                string source = "";
-                try { source = pt.SourceData?.ToString() ?? ""; } catch { }
-
-                pivots.Add(new JsonObject
+                foreach (dynamic pt in ws.PivotTables())
                 {
-                    ["name"] = (string)pt.Name,
-                    ["sheet"] = wsName,
-                    ["location"] = location,
-                    ["source"] = source
-                });
+                    string location = "";
+                    try { location = pt.TableRange2.Address; } catch { }
+
+                    string source = "";
+                    try { source = pt.SourceData?.ToString() ?? ""; } catch { }
+
+                    pivots.Add(new JsonObject
+                    {
+                        ["name"] = (string)pt.Name,
+                        ["sheet"] = wsName,
+                        ["location"] = location,
+                        ["source"] = source
+                    });
+                }
+            }
+            catch
+            {
+                // PivotTables() can throw TYPE_E_INVDATAREAD on some sheets — skip gracefully
             }
         }
 

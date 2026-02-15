@@ -6,6 +6,9 @@ public class DebugLogger
 {
     private readonly string _logPath;
     private readonly object _lock = new();
+    private int _writeCount;
+    private const long MaxLogSize = 2 * 1024 * 1024; // 2 MB
+    private const int TrimCheckInterval = 50;
 
     public DebugLogger()
     {
@@ -36,11 +39,33 @@ public class DebugLogger
         {
             lock (_lock)
             {
+                if (++_writeCount % TrimCheckInterval == 0)
+                    TrimIfNeeded();
+
                 File.AppendAllText(_logPath,
                     $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] [{level}] {msg}\n");
             }
         }
         catch { /* ignore logging failures */ }
+    }
+
+    private void TrimIfNeeded()
+    {
+        try
+        {
+            var fi = new FileInfo(_logPath);
+            if (!fi.Exists || fi.Length <= MaxLogSize) return;
+
+            // Keep the last half of the file (line-aligned)
+            var text = File.ReadAllText(_logPath);
+            int mid = text.Length / 2;
+            int cutAt = text.IndexOf('\n', mid);
+            if (cutAt > 0 && cutAt < text.Length - 1)
+                File.WriteAllText(_logPath, text[(cutAt + 1)..]);
+            else
+                File.WriteAllText(_logPath, ""); // fallback: clear
+        }
+        catch { /* ignore trim failures */ }
     }
 
     private static string Truncate(string s, int max)
