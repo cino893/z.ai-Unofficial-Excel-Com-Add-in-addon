@@ -85,10 +85,16 @@ public class ConversationService
             if (_messages == null)
                 Init();
 
+            // Build context summary from recent tool calls
+            var recentContext = BuildRecentContext();
+            var continueMsg = AddIn.I18n.T("conv.continue_prompt");
+            if (!string.IsNullOrEmpty(recentContext))
+                continueMsg += "\n\nLast completed actions:\n" + recentContext;
+
             _messages!.Add(new JsonObject
             {
                 ["role"] = "user",
-                ["content"] = AddIn.I18n.T("conv.continue_prompt")
+                ["content"] = continueMsg
             });
 
             AddIn.Logger.Info("Continue requested, resuming tool loop");
@@ -210,5 +216,48 @@ public class ConversationService
         AddIn.Logger.Warn($"Max tool rounds ({MaxToolRounds}) reached");
         LastStopReason = StopReason.MaxRounds;
         return AddIn.I18n.TFormat("conv.max_rounds", MaxToolRounds);
+    }
+
+    /// <summary>Build a short summary of recent tool calls for context on continue.</summary>
+    private string BuildRecentContext()
+    {
+        if (_messages == null) return "";
+
+        var lines = new List<string>();
+        // Scan last messages for tool calls (up to 10 most recent)
+        for (int i = _messages.Count - 1; i >= 0 && lines.Count < 10; i--)
+        {
+            var msg = _messages[i]?.AsObject();
+            if (msg == null) continue;
+            var role = msg["role"]?.GetValue<string>();
+
+            if (role == "tool")
+            {
+                var content = msg["content"]?.GetValue<string>() ?? "";
+                // Truncate long tool results
+                if (content.Length > 100)
+                    content = content[..100] + "...";
+                lines.Add($"  → result: {content}");
+            }
+            else if (role == "assistant" && msg.ContainsKey("tool_calls"))
+            {
+                var toolCalls = msg["tool_calls"]?.AsArray();
+                if (toolCalls != null)
+                {
+                    foreach (var tc in toolCalls)
+                    {
+                        var name = tc?["function"]?["name"]?.GetValue<string>() ?? "?";
+                        lines.Add($"  • called: {name}");
+                    }
+                }
+            }
+            else if (role == "user")
+            {
+                break; // Stop at the previous user message
+            }
+        }
+
+        lines.Reverse();
+        return string.Join("\n", lines);
     }
 }

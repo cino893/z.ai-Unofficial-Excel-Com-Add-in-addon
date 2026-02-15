@@ -107,17 +107,31 @@ public class ZaiApiService
         {
             var json = JsonNode.Parse(body);
             var code = json?["error"]?["code"]?.GetValue<string>() ?? "";
-            return code switch
+            var message = json?["error"]?["message"]?.GetValue<string>() ?? "";
+
+            // Check error code first (most specific)
+            var byCode = code switch
             {
+                "1113" => t.T("error.balance_empty"),
                 "1261" => t.T("error.balance_empty"),
                 "1301" => t.T("error.content_filter"),
                 "1302" => t.T("error.content_filter"),
-                _ => httpCode switch
-                {
-                    401 => t.T("error.invalid_key"),
-                    429 => t.T("error.rate_limit"),
-                    _ => t.T("error.api_generic") + $" (HTTP {httpCode})"
-                }
+                _ => (string?)null
+            };
+            if (byCode != null) return byCode;
+
+            // Check message for balance-related keywords
+            if (message.Contains("balance", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("recharge", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("余额", StringComparison.Ordinal) ||
+                message.Contains("充值", StringComparison.Ordinal))
+                return t.T("error.balance_empty");
+
+            return httpCode switch
+            {
+                401 => t.T("error.invalid_key"),
+                429 => t.T("error.rate_limit"),
+                _ => t.T("error.api_generic") + $" (HTTP {httpCode})"
             };
         }
         catch
