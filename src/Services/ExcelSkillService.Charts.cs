@@ -153,8 +153,19 @@ public partial class ExcelSkillService
         else
         {
             var destSheetName = Str(args["dest_sheet"]);
-            destSheet = !string.IsNullOrEmpty(destSheetName)
-                ? wb.Worksheets[destSheetName] : ws;
+            if (!string.IsNullOrEmpty(destSheetName))
+            {
+                try { destSheet = wb.Worksheets[destSheetName]; }
+                catch
+                {
+                    destSheet = wb.Worksheets.Add();
+                    destSheet.Name = destSheetName;
+                }
+            }
+            else
+            {
+                destSheet = ws;
+            }
             destRange = destSheet.Range[destCell];
         }
 

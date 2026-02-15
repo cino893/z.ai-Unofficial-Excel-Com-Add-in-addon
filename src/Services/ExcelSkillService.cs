@@ -73,12 +73,14 @@ public partial class ExcelSkillService
                 new JsonArray()),
 
             MakeTool("format_range",
-                "Format cells: bold, italic, font size/color, background color, number format, alignment, borders, column width, row height, autofit, merge",
+                "Format cells: bold, italic, underline, font name/size/color, background color, number format, alignment, borders, column width, row height, autofit, merge",
                 new JsonObject
                 {
                     ["range"] = PropString("Range to format e.g. A1:D1"),
                     ["bold"] = PropBool("Set bold"),
                     ["italic"] = PropBool("Set italic"),
+                    ["underline"] = PropBool("Set underline"),
+                    ["font_name"] = PropString("Font name e.g. Arial, Calibri, Times New Roman"),
                     ["font_size"] = PropNumber("Font size in points"),
                     ["font_color"] = PropNumber("Font color as RGB long (e.g. 255 for red, 65280 for green, 16711680 for blue)"),
                     ["bg_color"] = PropNumber("Background color as RGB long"),
@@ -95,11 +97,12 @@ public partial class ExcelSkillService
                 new JsonArray { "range" }),
 
             MakeTool("insert_formula",
-                "Insert an Excel formula into a cell. Use English function names (SUM, AVERAGE, VLOOKUP, IF, COUNT, etc.)",
+                "Insert an Excel formula into a cell. Use English function names (SUM, AVERAGE, VLOOKUP, IF, COUNT, etc.). Use fill_to to auto-fill the formula down/across a range.",
                 new JsonObject
                 {
                     ["cell"] = PropString("Target cell e.g. B10"),
                     ["formula"] = PropString("Formula e.g. =SUM(B1:B9) or =IF(A1>0,A1*2,0)"),
+                    ["fill_to"] = PropString("End cell to auto-fill formula to e.g. B100 (optional — fills from cell to fill_to adjusting references)"),
                     ["sheet"] = PropString("Sheet name (optional)")
                 },
                 new JsonArray { "cell", "formula" }),
@@ -178,6 +181,7 @@ public partial class ExcelSkillService
                 {
                     ["source_range"] = PropString("Source data range e.g. A1:D100"),
                     ["dest_cell"] = PropString("Top-left cell for PivotTable placement e.g. F1 (default: new sheet)"),
+                    ["dest_sheet"] = PropString("Destination sheet name (optional, defaults to source sheet or new sheet)"),
                     ["name"] = PropString("PivotTable name (optional)"),
                     ["row_fields"] = new JsonObject
                     {
@@ -246,7 +250,7 @@ public partial class ExcelSkillService
                 {
                     ["range"] = PropString("Range to format e.g. B2:B100"),
                     ["rule_type"] = PropString("Rule type: color_scale, data_bars, icon_set, cell_value, top_bottom, above_average, duplicate, unique"),
-                    ["operator"] = PropString("For cell_value: greater, less, equal, between, not_between, greater_equal, less_equal (optional)"),
+                    ["operator"] = PropString("For cell_value: greater, less, equal, between, not_between, greater_equal, less_equal. For top_bottom: top or bottom (default: top)"),
                     ["value1"] = PropString("Threshold value or formula (for cell_value/top_bottom rules)"),
                     ["value2"] = PropString("Second value (for between/not_between operator)"),
                     ["format_color"] = PropNumber("Fill color as RGB long for matching cells (e.g. 65280 for green)"),

@@ -15,6 +15,9 @@ public partial class ExcelSkillService
 
         if (args["bold"] != null) rng.Font.Bold = Bool(args["bold"]);
         if (args["italic"] != null) rng.Font.Italic = Bool(args["italic"]);
+        if (args["underline"] != null)
+            rng.Font.Underline = Bool(args["underline"]) ? 2 : -4142; // xlUnderlineStyleSingle / xlUnderlineStyleNone
+        if (args["font_name"] != null) rng.Font.Name = Str(args["font_name"]);
         if (args["font_size"] != null) rng.Font.Size = Dbl(args["font_size"]);
         if (args["font_color"] != null) rng.Font.Color = Int(args["font_color"]);
         if (args["bg_color"] != null) rng.Interior.Color = Int(args["bg_color"]);
@@ -71,11 +74,22 @@ public partial class ExcelSkillService
         dynamic ws = GetTargetSheet(args);
         string cell = Str(args["cell"]);
         string formula = Str(args["formula"]);
+        string fillTo = Str(args["fill_to"]);
 
         if (!formula.StartsWith('='))
             formula = "=" + formula;
 
         ws.Range[cell].Formula = formula;
+
+        int cellsFilled = 1;
+        if (!string.IsNullOrEmpty(fillTo))
+        {
+            dynamic sourceRange = ws.Range[cell];
+            dynamic fillRange = ws.Range[$"{cell}:{fillTo}"];
+            sourceRange.AutoFill(Destination: fillRange, Type: 0); // xlFillDefault
+            cellsFilled = fillRange.Cells.Count;
+        }
+
         object? resultVal = ws.Range[cell].Value;
 
         var result = new JsonObject
@@ -83,7 +97,8 @@ public partial class ExcelSkillService
             ["success"] = true,
             ["cell"] = cell,
             ["formula"] = formula,
-            ["result"] = resultVal?.ToString() ?? ""
+            ["result"] = resultVal?.ToString() ?? "",
+            ["cells_filled"] = cellsFilled
         };
         return result.ToJsonString();
     }
@@ -172,9 +187,9 @@ public partial class ExcelSkillService
 
             case "top_bottom":
                 string tbVal = Str(args["value1"], "10");
-                // xlTop10Top = 1
+                string tbDir = Str(args["operator"], "top").ToLowerInvariant();
                 dynamic tbRule = rng.FormatConditions.AddTop10();
-                tbRule.TopBottom = 1; // xlTop10Top
+                tbRule.TopBottom = (tbDir == "bottom") ? 0 : 1; // 0=xlTop10Bottom, 1=xlTop10Top
                 tbRule.Rank = int.Parse(tbVal);
                 if (args["format_color"] != null)
                     tbRule.Interior.Color = Int(args["format_color"]);

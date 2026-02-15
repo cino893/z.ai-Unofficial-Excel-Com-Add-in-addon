@@ -258,6 +258,13 @@ public partial class ExcelSkillService
         bool hasHeaders = Bool(args["has_headers"], true);
 
         int rowsBefore = rng.Rows.Count;
+        int startRow = rng.Row;
+        int col = rng.Column;
+        dynamic app = GetApp();
+
+        // Count non-empty rows in first column before dedup (single COM call)
+        dynamic countRange = ws.Range[ws.Cells[startRow, col], ws.Cells[startRow + rowsBefore - 1, col]];
+        int dataBefore = (int)app.WorksheetFunction.CountA(countRange);
 
         var colsNode = args["columns"]?.AsArray();
         if (colsNode != null && colsNode.Count > 0)
@@ -272,14 +279,16 @@ public partial class ExcelSkillService
             rng.RemoveDuplicates(Columns: allCols, Header: hasHeaders ? 1 : 2);
         }
 
-        int rowsAfter = ws.Range[rangeAddr].Rows.Count;
+        // Count non-empty rows after dedup
+        int dataAfter = (int)app.WorksheetFunction.CountA(countRange);
 
         var result = new JsonObject
         {
             ["success"] = true,
             ["range"] = rangeAddr,
-            ["rows_before"] = rowsBefore,
-            ["rows_removed"] = rowsBefore - rowsAfter
+            ["rows_before"] = dataBefore,
+            ["rows_after"] = dataAfter,
+            ["rows_removed"] = dataBefore - dataAfter
         };
         return result.ToJsonString();
     }

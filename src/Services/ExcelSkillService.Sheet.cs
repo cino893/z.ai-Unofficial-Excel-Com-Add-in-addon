@@ -59,8 +59,7 @@ public partial class ExcelSkillService
             return JsonSerializer.Serialize(new { error = "at_row must be >= 1" });
         if (count < 1) count = 1;
 
-        for (int i = 0; i < count; i++)
-            ws.Rows[atRow].Insert(-4121); // xlDown
+        ws.Rows[$"{atRow}:{atRow + count - 1}"].Insert(-4121); // xlDown — single COM call
 
         var result = new JsonObject
         {
