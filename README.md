@@ -1,107 +1,113 @@
 # Z.AI Excel Add-in
 
-Dodatek do Microsoft Excel umożliwiający korzystanie z agenta AI platformy **z.ai** (Zhipu AI) bezpośrednio w arkuszu kalkulacyjnym.
+[🇵🇱 Czytaj po polsku](README.pl.md)
 
-**Wersja 2.0** — przepisana jako .NET COM Add-in z nowoczesnym interfejsem WPF.
+Add-in for Microsoft Excel that lets you talk to **z.ai** (Zhipu AI) directly from a worksheet.
 
-## ✨ Nowości w v2.0
+**Version 2.0** — rewritten as a .NET COM Add-in with a modern WPF UI (built with Excel-DNA, shipped as `.xll`).
 
-- **Prawdziwy panel boczny** (Custom Task Pane) — czat wyświetla się po prawej stronie Excela
-- **Piękny interfejs WPF** — dymki czatu, gradient, animowane wskaźniki, logo
-- **8 języków** — PL, EN, DE, FR, ES, UK, ZH, JA (auto-wykrywanie z Windowsa)
-- **15 narzędzi AI** — w tym `list_charts` i `delete_chart` (naprawiony bug z pętlą wykresów)
-- **Wykrywanie pętli** — AI nie powtarza tych samych operacji w nieskończoność
-- **Wstążka (Ribbon)** — dedykowana zakładka Z.AI z przyciskami
+![Showreel](show-reel.gif)
 
-## Możliwości
+## Project versions
 
-| Tool | Opis |
-|------|------|
-| `read_cell` / `write_cell` | Odczyt/zapis komórki |
-| `read_range` / `write_range` | Odczyt/zapis zakresu (tablice 2D) |
-| `get_sheet_info` | Informacje o arkuszu (wymiary, nagłówki) |
-| `get_workbook_info` | Informacje o skoroszycie (arkusze, ścieżka) |
-| `format_range` | Formatowanie (czcionka, kolory, ramki, wyrównanie, merge) |
-| `insert_formula` | Wstawianie formuł Excel |
-| `sort_range` | Sortowanie danych |
-| `add_sheet` | Dodawanie arkusza |
-| `delete_rows` / `insert_rows` | Usuwanie/wstawianie wierszy |
-| `create_chart` | Tworzenie wykresów (column, bar, line, pie, scatter, area) |
-| `delete_chart` | Usuwanie wykresu |
-| `list_charts` | Lista wykresów na arkuszu |
+- **v2.0 (.NET COM Add-in)** — main, actively developed project in `src/ZaiExcelAddin` (solution `dodatek-z-ai-opus.sln`).
+- **v1.0 (VBA .xlam)** — legacy project in `legacy`; rebuild with `cscript build.vbs`.
 
-## Wymagania
+## Download
 
-- Microsoft Excel 2016+ (Windows, 64-bit zalecany)
-- .NET 8.0 Runtime ([pobierz](https://dotnet.microsoft.com/download/dotnet/8.0))
-- Klucz API z [z.ai](https://open.z.ai/) (rejestracja darmowa)
+- [Latest Excel-DNA (.xll) package for the COM Add-in](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)
+- [All releases](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
 
-## Budowanie
+## ✨ Highlights in v2.0
 
-Wymagany .NET SDK 8.0+:
+- **Custom Task Pane** — chat lives on the right side of Excel
+- **Modern WPF UI** — chat bubbles, gradients, animated typing dots, logo
+- **8 languages** — PL, EN, DE, FR, ES, UK, ZH, JA (auto-detected from Windows)
+- **15 AI tools** — incl. `list_charts` and `delete_chart` (chart loop bug fixed)
+- **Loop detection** — stops repeating the same tool forever
+- **Ribbon tab** — dedicated Z.AI buttons
+
+## Capabilities
+
+| Tool | Description |
+|------|-------------|
+| `read_cell` / `write_cell` | Read/write a single cell |
+| `read_range` / `write_range` | Read/write a 2D range |
+| `get_sheet_info` | Sheet dimensions and headers |
+| `get_workbook_info` | Workbook sheets and path |
+| `format_range` | Fonts, colors, borders, alignment, merge |
+| `insert_formula` | Insert Excel formulas |
+| `sort_range` | Sort data |
+| `add_sheet` | Add sheet |
+| `delete_rows` / `insert_rows` | Delete/insert rows |
+| `create_chart` | Create charts (column, bar, line, pie, scatter, area) |
+| `delete_chart` | Delete a chart |
+| `list_charts` | List charts on a sheet |
+
+## Requirements
+
+- Microsoft Excel 2016+ (Windows, 64-bit recommended)
+- .NET 8.0 Runtime ([download](https://dotnet.microsoft.com/download/dotnet/8.0))
+- API key from [z.ai](https://open.z.ai/) (free registration)
+
+## Build (COM Add-in v2.0)
+
+Requires .NET SDK 8.0+:
 
 ```powershell
 cd src\ZaiExcelAddin
 dotnet build -c Release
 ```
 
-Wynik: `src\ZaiExcelAddin\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+Output: `src\ZaiExcelAddin\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
 
-## Instalacja
+## Install (COM Add-in v2.0)
 
-1. Otwórz Excel
-2. **Plik** → **Opcje** → **Dodatki**
-3. Na dole: **Zarządzaj** → **Dodatki programu Excel** → **Przejdź**
-4. Kliknij **Przeglądaj** i wskaż plik `ZaiExcelAddin-AddIn64-packed.xll`
-5. Zatwierdź
+1. Open Excel
+2. **File** → **Options** → **Add-ins**
+3. At bottom: **Manage** → **Excel Add-ins** → **Go**
+4. **Browse** and select `ZaiExcelAddin-AddIn64-packed.xll`
+5. Confirm
 
-Zakładka **Z.AI** pojawi się na wstążce.
+The **Z.AI** tab appears on the ribbon.
 
-## Użytkowanie
+## Usage
 
-### Logowanie
-Kliknij **Z.AI** → **Login** → wpisz klucz API z platformy z.ai.
+### Login
+Click **Z.AI** → **Login** → paste your z.ai API key.
 
-### Czat z AI
-Kliknij przycisk **💬 Chat** na wstążce Z.AI — otworzy się panel boczny z czatem.
+### Chat with AI
+Click **💬 Chat** on the Z.AI ribbon tab — the right-side pane opens.
 
-Przykłady poleceń:
-- "Przeczytaj dane z A1:D10"
-- "Dodaj formułę SUM do E1"
-- "Sformatuj nagłówki na pogrubione z niebieskim tłem"
-- "Stwórz wykres kołowy z A1:B5"
-- "Posortuj po kolumnie C malejąco"
+Example prompts:
+- "Read data from A1:D10"
+- "Add a SUM formula to E1"
+- "Bold header row with blue background"
+- "Create a pie chart from A1:B5"
+- "Sort by column C descending"
 
-### Zmiana języka
-**Z.AI** → **Language** → wpisz kod: `pl`, `en`, `de`, `fr`, `es`, `uk`, `zh`, `ja`
+### Change language
+**Z.AI** → **Language** → type code: `pl`, `en`, `de`, `fr`, `es`, `uk`, `zh`, `ja`
 
-## Struktura projektu
+## Project structure
 
 ```
-dodatek-z-ai-opus/
-├── src/ZaiExcelAddin/           # .NET COM Add-in (v2.0)
-│   ├── ZaiExcelAddin.csproj     # Projekt C# + ExcelDNA
-│   ├── AddIn.cs                 # Punkt wejścia (IExcelAddIn)
-│   ├── RibbonController.cs      # Wstążka + Custom Task Pane
+z.ai-Unofficial-Excel-Com-Add-in-addon/
+├── src/ZaiExcelAddin/           # .NET COM Add-in (v2.0, Excel-DNA)
+│   ├── ZaiExcelAddin.csproj     # C# project
+│   ├── AddIn.cs                 # Entry point (IExcelAddIn)
+│   ├── RibbonController.cs      # Ribbon + Custom Task Pane
 │   ├── Models/
-│   │   └── ChatMessage.cs
-│   ├── Services/
-│   │   ├── AuthService.cs       # Klucz API (rejestr Windows)
-│   │   ├── ConversationService.cs # Pętla tool-calling
-│   │   ├── DebugLogger.cs       # Logowanie
-│   │   ├── ExcelSkillService.cs # 15 narzędzi Excel
-│   │   ├── I18nService.cs       # 8 języków
-│   │   └── ZaiApiService.cs     # HTTP do z.ai API
-│   └── UI/
-│       ├── ChatPanel.xaml        # Interfejs WPF czatu
-│       ├── ChatPanel.xaml.cs
-│       └── ChatPaneHost.cs       # Host WinForms dla CTP
-├── *.bas, *.frm                 # Legacy VBA (v1.0)
-├── build.vbs                    # Legacy: budowanie .xlam
-└── README.md
+│   ├── Services/                # Auth, Conversation, Excel skills, I18n, API
+│   └── UI/                      # WPF chat panel + host
+├── legacy/                      # VBA (v1.0)
+│   ├── *.bas, *.frm
+│   └── build.vbs                # Builds .xlam
+├── show-reel.gif
+└── README*.md                   # EN + PL docs
 ```
 
-## Architektura v2.0
+## v2.0 architecture (COM Add-in)
 
 ```
 ┌──────────────┐    HTTP/JSON     ┌─────────────────┐
@@ -122,10 +128,10 @@ dodatek-z-ai-opus/
               └─────────────┘    └──────────────┘    └──────────────┘
 ```
 
-## Wersja Legacy (VBA)
+## Legacy version (VBA)
 
-Stara wersja VBA (.xlam) jest nadal dostępna — uruchom `cscript build.vbs` aby ją zbudować.
+Legacy VBA (.xlam) remains available — run `cscript build.vbs` in `legacy` to build.
 
-## Licencja
+## License
 
-Projekt open-source. Wykorzystuje API platformy z.ai — wymagane konto i klucz API.
+Open-source project. Uses the z.ai API — you need an account and API key.
