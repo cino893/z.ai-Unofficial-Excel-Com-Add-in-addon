@@ -43,18 +43,39 @@ public class I18nService
         try { AddIn.Logger?.Info($"I18nService initialized, language: {CurrentLanguage}"); } catch { }
     }
 
-    public string T(string key)
+    public string T(string key, IReadOnlyDictionary<string, string>? replacements = null)
     {
+        string value;
         if (_translations.TryGetValue(CurrentLanguage, out var lang) && lang.TryGetValue(key, out var val))
-            return val;
-        if (_translations.TryGetValue(DefaultLanguage, out var en) && en.TryGetValue(key, out var fallback))
-            return fallback;
-        return key;
+            value = val;
+        else if (_translations.TryGetValue(DefaultLanguage, out var en) && en.TryGetValue(key, out var fallback))
+            value = fallback;
+        else
+            value = key;
+
+        return ApplyReplacements(value, replacements);
     }
 
     public string TFormat(string key, object arg0)
     {
         return T(key).Replace("{0}", arg0?.ToString() ?? "");
+    }
+
+    private static string ApplyReplacements(string value, IReadOnlyDictionary<string, string>? replacements)
+    {
+        if (string.IsNullOrEmpty(value) || replacements == null || replacements.Count == 0)
+            return value;
+
+        foreach (var kv in replacements)
+        {
+            if (string.IsNullOrEmpty(kv.Key))
+                continue;
+
+            var placeholder = "{{" + kv.Key + "}}";
+            value = value.Replace(placeholder, kv.Value ?? string.Empty);
+        }
+
+        return value;
     }
 
     public void SetLanguage(string code)

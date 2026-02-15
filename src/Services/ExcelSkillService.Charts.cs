@@ -216,4 +216,78 @@ public partial class ExcelSkillService
         };
         return result.ToJsonString();
     }
+
+    // --- move_pivot_table ---
+    private string SkillMovePivotTable(JsonNode args)
+    {
+        dynamic app = GetApp();
+        dynamic ws = GetTargetSheet(args);
+        dynamic wb = app.ActiveWorkbook;
+        string pivotName = Str(args["pivot_name"]);
+        string destSheetName = Str(args["dest_sheet"]);
+        string destCell = Str(args["dest_cell"], "A3");
+
+        // Find the pivot table
+        dynamic? foundPivot = null;
+        dynamic? sourceSheet = null;
+
+        foreach (dynamic sheet in wb.Worksheets)
+        {
+            try
+            {
+                foreach (dynamic pt in sheet.PivotTables())
+                {
+                    if ((string)pt.Name == pivotName)
+                    {
+                        foundPivot = pt;
+                        sourceSheet = sheet;
+                        break;
+                    }
+                }
+                if (foundPivot != null) break;
+            }
+            catch { /* sheet may not have pivot tables */ }
+        }
+
+        if (foundPivot == null)
+            return JsonSerializer.Serialize(new { error = $"PivotTable not found: {pivotName}" });
+
+        if (sourceSheet == null)
+            return JsonSerializer.Serialize(new { error = "Source sheet not found" });
+
+        // Determine destination
+        dynamic destSheet;
+        if (string.IsNullOrEmpty(destSheetName))
+        {
+            destSheet = wb.Worksheets.Add();
+        }
+        else
+        {
+            try
+            {
+                destSheet = wb.Worksheets[destSheetName];
+            }
+            catch
+            {
+                destSheet = wb.Worksheets.Add();
+                destSheet.Name = destSheetName;
+            }
+        }
+
+        // Move the pivot table
+        dynamic destRange = destSheet.Range[destCell];
+        foundPivot.TableRange2.Cut();
+        destRange.Select();
+        destSheet.Paste(destRange);
+
+        var result = new JsonObject
+        {
+            ["success"] = true,
+            ["pivot_name"] = pivotName,
+            ["from_sheet"] = (string)sourceSheet.Name,
+            ["to_sheet"] = (string)destSheet.Name,
+            ["dest_cell"] = destCell
+        };
+        return result.ToJsonString();
+    }
 }

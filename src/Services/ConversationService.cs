@@ -10,8 +10,11 @@ public class ConversationService
     private JsonArray _messages = null!;
     private bool _isProcessing;
     private CancellationTokenSource? _cts;
-    private const int MaxToolRounds = 15;
+    private string _lastAssistantResponse = "";
+    private const int MaxToolRounds = 45;
     private const int MaxSameToolRepeats = 2;
+    private static readonly IReadOnlyDictionary<string, string> MaxToolRoundPlaceholders =
+        new Dictionary<string, string> { ["MaxToolRounds"] = MaxToolRounds.ToString() };
 
     public bool IsProcessing => _isProcessing;
     public StopReason LastStopReason { get; private set; } = StopReason.None;
@@ -26,9 +29,10 @@ public class ConversationService
             new JsonObject
             {
                 ["role"] = "system",
-                ["content"] = AddIn.I18n.T("system.prompt")
+                ["content"] = AddIn.I18n.T("system.prompt", MaxToolRoundPlaceholders)
             }
         };
+        _lastAssistantResponse = "";
         LastStopReason = StopReason.None;
         AddIn.Logger.Info("Conversation initialized");
     }
@@ -87,8 +91,10 @@ public class ConversationService
 
             // Build context summary from recent tool calls
             var recentContext = BuildRecentContext();
-            var continueMsg = AddIn.I18n.T("conv.continue_prompt");
-            if (!string.IsNullOrEmpty(recentContext))
+            var continueTranslation = AddIn.I18n.T("conv.continue_prompt");
+            var useLastSummary = LastStopReason == StopReason.MaxRounds && !string.IsNullOrWhiteSpace(_lastAssistantResponse);
+            var continueMsg = useLastSummary ? _lastAssistantResponse : continueTranslation;
+            if (!useLastSummary && !string.IsNullOrEmpty(recentContext))
                 continueMsg += "\n\nLast completed actions:\n" + recentContext;
 
             _messages!.Add(new JsonObject
@@ -129,6 +135,15 @@ public class ConversationService
             }
 
             AddIn.Logger.Info($"Tool-calling loop round {round}/{MaxToolRounds}");
+
+            if (round == MaxToolRounds)
+            {
+                _messages.Add(new JsonObject
+                {
+                    ["role"] = "user",
+                    ["content"] = AddIn.I18n.T("conv.final_round_prompt", MaxToolRoundPlaceholders)
+                });
+            }
 
             var (success, data, error) = AddIn.Api.SendCompletion(
                 _messages, AddIn.Skills.GetToolDefinitions());
@@ -202,11 +217,18 @@ public class ConversationService
 
             // No tool calls — final assistant response
             var content = ZaiApiService.GetResponseContent(data) ?? "";
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                LastStopReason = StopReason.Error;
+                AddIn.Logger.Error("Assistant returned empty response");
+                return AddIn.I18n.T("conv.generic_failure");
+            }
             _messages.Add(new JsonObject
             {
                 ["role"] = "assistant",
                 ["content"] = content
             });
+            _lastAssistantResponse = content;
 
             AddIn.Logger.Info($"Assistant response received ({content.Length} chars)");
             LastStopReason = StopReason.Completed;

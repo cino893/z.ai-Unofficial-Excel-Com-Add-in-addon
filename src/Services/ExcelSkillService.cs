@@ -202,6 +202,17 @@ public partial class ExcelSkillService
                 },
                 new JsonArray { "source_range", "row_fields", "value_fields" }),
 
+            MakeTool("move_pivot_table",
+                "Move a PivotTable from current location to a new sheet or cell. Use this when operations are blocked by an existing pivot table.",
+                new JsonObject
+                {
+                    ["pivot_name"] = PropString("Name of the PivotTable to move (get from error message or list)"),
+                    ["dest_sheet"] = PropString("Destination sheet name (optional, if omitted creates new sheet)"),
+                    ["dest_cell"] = PropString("Destination cell e.g. A1 (default: A3)"),
+                    ["sheet"] = PropString("Source sheet containing the pivot table (optional, defaults to active)")
+                },
+                new JsonArray { "pivot_name" }),
+
             MakeTool("auto_filter",
                 "Apply or remove auto-filter on a range. Call without criteria to toggle filter on/off.",
                 new JsonObject
@@ -342,6 +353,7 @@ public partial class ExcelSkillService
                 "delete_chart" => SkillDeleteChart(args),
                 "list_charts" => SkillListCharts(args),
                 "create_pivot_table" => SkillCreatePivotTable(args),
+                "move_pivot_table" => SkillMovePivotTable(args),
                 "auto_filter" => SkillAutoFilter(args),
                 "find_replace" => SkillFindReplace(args),
                 "conditional_format" => SkillConditionalFormat(args),
