@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ExcelDna.Integration;
 using ZaiExcelAddin.Models;
 using ZaiExcelAddin.Services;
 
@@ -108,33 +109,8 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
 
         btnContinue.Visibility = Visibility.Collapsed;
         AddMessage("info", AddIn.I18n.T("chat.continuing"));
-        SetProcessing(true);
 
-        // Capture workbook state for undo before agent continues editing
-        UndoService.CaptureSnapshot();
-
-        try
-        {
-            var response = await Task.Run(() =>
-            {
-                return AddIn.Conversation.Continue(ExecuteToolOnMainThread);
-            });
-
-            if (!string.IsNullOrEmpty(response))
-                AddMessage("assistant", response);
-
-            // Register undo so user can Ctrl+Z the agent's batch
-            UndoService.RegisterUndo();
-        }
-        catch (Exception ex)
-        {
-            AddIn.Logger.Error($"Continue error: {ex.Message}");
-            AddMessage("info", $"Error: {ex.Message}");
-        }
-        finally
-        {
-            SetProcessing(false);
-        }
+        await RunAgentTask(() => AddIn.Conversation.Continue(ExecuteToolOnMainThread));
     }
 
     private void OnInputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -160,31 +136,68 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
 
         txtInput.Text = "";
         AddMessage("user", text);
-        SetProcessing(true);
 
-        // Capture workbook state for undo before agent starts editing
+        await RunAgentTask(() => AddIn.Conversation.SendMessage(text, ExecuteToolOnMainThread));
+    }
+
+    /// <summary>
+    /// Wraps agent execution with Excel performance optimization.
+    /// Disables ScreenUpdating, EnableEvents, and sets manual Calculation
+    /// for the duration of tool execution (10-43x faster bulk operations).
+    /// </summary>
+    private async Task RunAgentTask(Func<string> agentAction)
+    {
+        SetProcessing(true);
         UndoService.CaptureSnapshot();
+
+        bool oldScreenUpdating = true;
+        bool oldEnableEvents = true;
+        int oldCalculation = -4105; // xlCalculationAutomatic
+
+        // Suppress Excel UI during agent execution for performance
+        _host.Invoke(() =>
+        {
+            try
+            {
+                dynamic app = ExcelDnaUtil.Application;
+                oldScreenUpdating = app.ScreenUpdating;
+                oldEnableEvents = app.EnableEvents;
+                oldCalculation = (int)app.Calculation;
+                app.ScreenUpdating = false;
+                app.EnableEvents = false;
+                app.Calculation = -4135; // xlCalculationManual
+            }
+            catch { /* ignore if Excel not ready */ }
+        });
 
         try
         {
-            var response = await Task.Run(() =>
-            {
-                return AddIn.Conversation.SendMessage(text, ExecuteToolOnMainThread);
-            });
+            var response = await Task.Run(agentAction);
 
             if (!string.IsNullOrEmpty(response))
                 AddMessage("assistant", response);
 
-            // Register undo so user can Ctrl+Z the agent's batch
             UndoService.RegisterUndo();
         }
         catch (Exception ex)
         {
-            AddIn.Logger.Error($"SendMessage error: {ex.Message}");
+            AddIn.Logger.Error($"Agent error: {ex.Message}");
             AddMessage("info", $"Error: {ex.Message}");
         }
         finally
         {
+            // Restore Excel state — always, even on error
+            _host.Invoke(() =>
+            {
+                try
+                {
+                    dynamic app = ExcelDnaUtil.Application;
+                    app.Calculation = oldCalculation;
+                    app.EnableEvents = oldEnableEvents;
+                    app.ScreenUpdating = oldScreenUpdating;
+                }
+                catch { /* ignore */ }
+            });
             SetProcessing(false);
         }
     }

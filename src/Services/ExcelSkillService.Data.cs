@@ -44,14 +44,18 @@ public partial class ExcelSkillService
     }
 
     // --- read_range ---
+    private const int MaxReadRows = 500;
+
     private string SkillReadRange(JsonNode args)
     {
         dynamic ws = GetTargetSheet(args);
         string rangeAddr = Str(args["range"]);
         dynamic rng = ws.Range[rangeAddr];
 
-        int rows = rng.Rows.Count;
+        int totalRows = rng.Rows.Count;
         int cols = rng.Columns.Count;
+        bool truncated = totalRows > MaxReadRows;
+        int rows = truncated ? MaxReadRows : totalRows;
 
         var data = new JsonArray();
 
@@ -65,8 +69,11 @@ public partial class ExcelSkillService
         }
         else
         {
-            // Bulk read — single COM call
-            object?[,] values = rng.Value;
+            // Bulk read — single COM call (truncated range if needed)
+            dynamic readRange = truncated
+                ? ws.Range[rng.Cells[1, 1], rng.Cells[rows, cols]]
+                : rng;
+            object?[,] values = readRange.Value;
             for (int r = 1; r <= rows; r++)
             {
                 var row = new JsonArray();
@@ -92,6 +99,13 @@ public partial class ExcelSkillService
             ["cols"] = cols,
             ["data"] = data
         };
+
+        if (truncated)
+        {
+            result["truncated"] = true;
+            result["total_rows"] = totalRows;
+        }
+
         return result.ToJsonString();
     }
 
@@ -150,6 +164,34 @@ public partial class ExcelSkillService
             headers.Add(v?.ToString() ?? "");
         }
 
+        // Include first 5 rows as data sample so model understands structure without read_range
+        int sampleRows = Math.Min(usedRows, 5);
+        var sample = new JsonArray();
+        if (sampleRows > 0 && maxCols > 0)
+        {
+            if (sampleRows == 1 && maxCols == 1)
+            {
+                object? v = usedRng.Cells[1, 1].Value;
+                var row = new JsonArray { v?.ToString() ?? "" };
+                sample.Add(row);
+            }
+            else
+            {
+                dynamic sampleRange = ws.Range[usedRng.Cells[1, 1], usedRng.Cells[sampleRows, maxCols]];
+                object?[,] values = sampleRange.Value;
+                for (int r = 1; r <= sampleRows; r++)
+                {
+                    var row = new JsonArray();
+                    for (int c = 1; c <= maxCols; c++)
+                    {
+                        object? cv = values[r, c];
+                        row.Add(cv?.ToString() ?? "");
+                    }
+                    sample.Add(row);
+                }
+            }
+        }
+
         var result = new JsonObject
         {
             ["name"] = (string)ws.Name,
@@ -159,7 +201,8 @@ public partial class ExcelSkillService
             ["used_cols"] = usedCols,
             ["first_cell"] = (string)usedRng.Cells[1, 1].Address,
             ["last_cell"] = (string)usedRng.Cells[usedRows, usedCols].Address,
-            ["headers"] = headers
+            ["headers"] = headers,
+            ["sample_data"] = sample
         };
         return result.ToJsonString();
     }
