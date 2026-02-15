@@ -49,7 +49,7 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 
 - **Side-panel AI chat** — Custom Task Pane docked to the right
 - **WPF interface** — chat bubbles, Excel-green theme, typing animation, emoji support
-- **15 Excel tools** — the AI can read/write cells, format ranges, create charts, sort data, and more
+- **25 Excel tools** — the AI can read/write cells, format ranges, create charts, pivot tables, filters, and more
 - **12 models** — full catalog with pricing (free flash models included)
 - **8 languages** — auto-detected from Windows locale
 - **Loop detection** — prevents the AI from repeating the same operations endlessly
@@ -70,6 +70,15 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 | `delete_rows` / `insert_rows` | Delete/insert rows |
 | `create_chart` | Create charts (column, bar, line, pie, scatter, area) |
 | `delete_chart` / `list_charts` | Delete or list charts |
+| `create_pivot_table` | Create PivotTable with row/column/value fields |
+| `auto_filter` | Apply or clear AutoFilter on a range |
+| `find_replace` | Find and replace values in a sheet |
+| `conditional_format` | Add conditional formatting (highlight, color scale, data bar) |
+| `copy_range` | Copy a range to another location (values only or with formatting) |
+| `rename_sheet` / `delete_sheet` | Rename or delete a worksheet |
+| `freeze_panes` | Freeze/unfreeze panes at a specific cell |
+| `remove_duplicates` | Remove duplicate rows from a range |
+| `set_validation` | Add data validation (list, number, date, text length) |
 
 ## Build from Source
 
@@ -96,7 +105,7 @@ dodatek-z-ai-opus/
 │   │   ├── AuthService.cs          # API key storage (Windows Registry)
 │   │   ├── ConversationService.cs  # Tool-calling loop + loop detection
 │   │   ├── DebugLogger.cs          # File logging
-│   │   ├── ExcelSkillService.cs    # 15 Excel tools
+│   │   ├── ExcelSkillService.cs    # 25 Excel tools
 │   │   ├── I18nService.cs          # 8-language i18n
 │   │   └── ZaiApiService.cs        # Z.AI HTTP client + model catalog
 │   └── UI/
@@ -127,7 +136,7 @@ dodatek-z-ai-opus/
                      │                    │                    │
               ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
               │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
-              │  (WPF CTP)   │    │  (15 tools)    │    │  (8 langs)    │
+              │  (WPF CTP)   │    │  (25 tools)    │    │  (8 langs)    │
               └─────────────┘    └───────────────┘    └──────────────┘
 ```
 

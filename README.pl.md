@@ -49,7 +49,7 @@ Nieoficjalny dodatek do Microsoft Excel integrujący platformę **[Z.AI](https:/
 
 - **Panel boczny z czatem AI** — Custom Task Pane po prawej stronie Excela
 - **Interfejs WPF** — dymki czatu, zielony motyw Excela, animacje, emoji
-- **15 narzędzi Excel** — AI czyta/pisze komórki, formatuje, tworzy wykresy, sortuje
+- **25 narzędzi Excel** — AI czyta/pisze komórki, formatuje, tworzy wykresy, tabele przestawne, filtry
 - **12 modeli** — pełen katalog z cenami (darmowe modele flash w zestawie)
 - **8 języków** — automatyczne wykrywanie z ustawień Windows
 - **Wykrywanie pętli** — AI nie powtarza tych samych operacji w nieskończoność
@@ -70,6 +70,15 @@ Nieoficjalny dodatek do Microsoft Excel integrujący platformę **[Z.AI](https:/
 | `delete_rows` / `insert_rows` | Usuwanie/wstawianie wierszy |
 | `create_chart` | Tworzenie wykresów (kolumnowy, słupkowy, liniowy, kołowy, punktowy, obszarowy) |
 | `delete_chart` / `list_charts` | Usuwanie lub lista wykresów |
+| `create_pivot_table` | Tworzenie tabeli przestawnej z polami wierszy/kolumn/wartości |
+| `auto_filter` | Zastosowanie lub usunięcie AutoFiltra na zakresie |
+| `find_replace` | Znajdź i zamień wartości w arkuszu |
+| `conditional_format` | Formatowanie warunkowe (podświetlanie, skala kolorów, paski danych) |
+| `copy_range` | Kopiowanie zakresu do innej lokalizacji (wartości lub z formatowaniem) |
+| `rename_sheet` / `delete_sheet` | Zmiana nazwy lub usuwanie arkusza |
+| `freeze_panes` | Zablokowanie/odblokowanie okienek w danej komórce |
+| `remove_duplicates` | Usuwanie zduplikowanych wierszy z zakresu |
+| `set_validation` | Walidacja danych (lista, liczba, data, długość tekstu) |
 
 ## Budowanie ze źródeł
 
@@ -96,7 +105,7 @@ dodatek-z-ai-opus/
 │   │   ├── AuthService.cs          # Klucz API (rejestr Windows)
 │   │   ├── ConversationService.cs  # Pętla tool-calling + wykrywanie pętli
 │   │   ├── DebugLogger.cs          # Logowanie do pliku
-│   │   ├── ExcelSkillService.cs    # 15 narzędzi Excel
+│   │   ├── ExcelSkillService.cs    # 25 narzędzi Excel
 │   │   ├── I18nService.cs          # 8 języków
 │   │   └── ZaiApiService.cs        # Klient HTTP Z.AI + katalog modeli
 │   └── UI/
@@ -127,7 +136,7 @@ dodatek-z-ai-opus/
                      │                    │                    │
               ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
               │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
-              │  (WPF CTP)   │    │  (15 narzędzi) │    │  (8 języków)  │
+              │  (WPF CTP)   │    │  (25 narzędzi) │    │  (8 języków)  │
               └─────────────┘    └───────────────┘    └──────────────┘
 ```
 
