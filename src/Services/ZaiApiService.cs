@@ -13,7 +13,8 @@ public class ZaiApiService
     private static readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(120) };
 
     public (bool Success, JsonNode? Data, string? Error) SendCompletion(
-        JsonArray messages, JsonArray? tools = null, string? model = null)
+        JsonArray messages, JsonArray? tools = null, string? model = null,
+        CancellationToken ct = default)
     {
         var apiKey = AddIn.Auth.LoadApiKey().Trim();
         // Ensure key only contains ASCII (copy-paste can introduce invisible Unicode)
@@ -50,8 +51,8 @@ public class ZaiApiService
             request.Headers.Add("Authorization", $"Bearer {apiKey}");
             request.Headers.Add("Accept", "application/json");
 
-            var response = _http.Send(request);
-            var responseBody = response.Content.ReadAsStringAsync().Result;
+            var response = _http.SendAsync(request, ct).GetAwaiter().GetResult();
+            var responseBody = response.Content.ReadAsStringAsync(ct).GetAwaiter().GetResult();
             AddIn.Logger.ApiResponse((int)response.StatusCode, responseBody);
 
             if (response.IsSuccessStatusCode)
@@ -66,10 +67,16 @@ public class ZaiApiService
                 return (false, null, friendlyError);
             }
         }
+        catch (OperationCanceledException)
+        {
+            AddIn.Logger.Info("HTTP request cancelled");
+            return (false, null, null); // null error = cancelled, handled by caller
+        }
         catch (Exception ex)
         {
-            AddIn.Logger.Error($"Network error: {ex.Message}");
-            return (false, null, $"Network error: {ex.Message}");
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            AddIn.Logger.Error($"Network error: {msg}");
+            return (false, null, $"Network error: {msg}");
         }
     }
 
@@ -115,7 +122,7 @@ public class ZaiApiService
                 "1113" => t.T("error.balance_empty"),
                 "1261" => t.T("error.balance_empty"),
                 "1301" => t.T("error.content_filter"),
-                "1302" => t.T("error.content_filter"),
+                "1302" => t.T("error.rate_limit"),
                 _ => (string?)null
             };
             if (byCode != null) return byCode;

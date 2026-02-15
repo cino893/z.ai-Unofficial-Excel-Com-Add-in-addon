@@ -25,13 +25,61 @@ public class DebugLogger
     public void Debug(string msg) => Log("DEBUG", msg);
 
     public void ApiRequest(string method, string url, string body)
-        => Log("API-REQ", $"{method} {url}\n{Truncate(body, 2000)}");
+    {
+        // Compact summary: model + message count — NOT the full body
+        try
+        {
+            var json = System.Text.Json.JsonDocument.Parse(body);
+            var model = "";
+            var msgCount = 0;
+            var toolCount = 0;
+            if (json.RootElement.TryGetProperty("model", out var m)) model = m.GetString() ?? "";
+            if (json.RootElement.TryGetProperty("messages", out var msgs)) msgCount = msgs.GetArrayLength();
+            if (json.RootElement.TryGetProperty("tools", out var tools)) toolCount = tools.GetArrayLength();
+            Log("API-REQ", $"{method} {url} model={model} msgs={msgCount} tools={toolCount}");
+        }
+        catch
+        {
+            Log("API-REQ", $"{method} {url} body_len={body.Length}");
+        }
+    }
 
     public void ApiResponse(int status, string body)
-        => Log("API-RES", $"HTTP {status}\n{Truncate(body, 2000)}");
+    {
+        // Compact summary: status + finish_reason + token usage
+        try
+        {
+            var json = System.Text.Json.JsonDocument.Parse(body);
+            var root = json.RootElement;
+
+            if (root.TryGetProperty("error", out var err))
+            {
+                var code = err.TryGetProperty("code", out var c) ? c.GetString() : "";
+                var msg = err.TryGetProperty("message", out var em) ? em.GetString() : "";
+                Log("API-RES", $"HTTP {status} error={code} {Truncate(msg ?? "", 200)}");
+                return;
+            }
+
+            var finish = "";
+            var promptTokens = 0;
+            var compTokens = 0;
+            if (root.TryGetProperty("choices", out var ch) && ch.GetArrayLength() > 0)
+                finish = ch[0].TryGetProperty("finish_reason", out var fr) ? fr.GetString() ?? "" : "";
+            if (root.TryGetProperty("usage", out var u))
+            {
+                if (u.TryGetProperty("prompt_tokens", out var pt)) promptTokens = pt.GetInt32();
+                if (u.TryGetProperty("completion_tokens", out var ct2)) compTokens = ct2.GetInt32();
+            }
+            Log("API-RES", $"HTTP {status} finish={finish} tokens={promptTokens}+{compTokens}={promptTokens + compTokens}");
+        }
+        catch
+        {
+            Log("API-RES", $"HTTP {status} body_len={body.Length}");
+        }
+    }
 
     public void ToolCall(string name, string args, string result)
-        => Log("TOOL", $"{name}({Truncate(args, 500)}) => {Truncate(result, 500)}");
+        => Log("TOOL", $"{name}({Truncate(args, 500)}) => {Truncate(result, 800)}");
 
     private void Log(string level, string msg)
     {

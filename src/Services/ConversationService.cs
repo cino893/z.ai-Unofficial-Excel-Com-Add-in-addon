@@ -178,10 +178,19 @@ public class ConversationService
             }
 
             var (success, data, error) = AddIn.Api.SendCompletion(
-                _messages, AddIn.Skills.GetToolDefinitions());
+                _messages, AddIn.Skills.GetToolDefinitions(), ct: _cts?.Token ?? CancellationToken.None);
 
             if (!success || data == null)
             {
+                // Cancelled by user — clean exit
+                if (_cts?.IsCancellationRequested == true || error == null)
+                {
+                    LastStopReason = StopReason.Cancelled;
+                    AddIn.Logger.Info("Cancelled during API call");
+                    RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
+                    return AddIn.I18n.T("conv.cancelled");
+                }
+
                 LastStopReason = StopReason.Error;
                 AddIn.Logger.Error($"API call failed: {error}");
                 RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);

@@ -352,7 +352,24 @@ public partial class ExcelSkillService
 
     // ======================== TOOL EXECUTION ========================
 
+    private const int VBA_E_IGNORE = unchecked((int)0x800AC472);
+
     public string Execute(string toolName, string argsJson)
+    {
+        // Retry once on VBA_E_IGNORE (Excel is busy / recalculating)
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            try { return ExecuteInner(toolName, argsJson); }
+            catch (System.Runtime.InteropServices.COMException cx) when (cx.HResult == VBA_E_IGNORE && attempt == 0)
+            {
+                AddIn.Logger.Warn($"{toolName}: Excel busy (0x800AC472), retrying in 300ms...");
+                System.Threading.Thread.Sleep(300);
+            }
+        }
+        return ExecuteInner(toolName, argsJson); // final attempt — let exceptions propagate
+    }
+
+    private string ExecuteInner(string toolName, string argsJson)
     {
         try
         {
