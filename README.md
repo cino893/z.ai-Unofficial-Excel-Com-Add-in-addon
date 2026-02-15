@@ -13,7 +13,7 @@ Dodatek do Microsoft Excel umożliwiający korzystanie z agenta AI platformy **z
 
 ## Pobierz
 
-- [Najnowszy plik XLL (ZaiExcelAddin-AddIn64-packed.xll)](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)
+- [Najnowszy pakiet Excel-DNA (.xll) dla COM Add-in](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)
 - [Pełna lista wydań](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
 
 ## ✨ Nowości w v2.0
