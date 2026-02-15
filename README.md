@@ -1,10 +1,17 @@
 # Z.AI Excel Add-in
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows)](https://www.microsoft.com/windows)
+[![Excel](https://img.shields.io/badge/Excel-2016%2B-217346?logo=microsoftexcel)](https://www.microsoft.com/excel)
+[![GitHub release](https://img.shields.io/github/v/release/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon)](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest)
+[![GitHub issues](https://img.shields.io/github/issues/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon)](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/issues)
+
 [🇵🇱 Czytaj po polsku](README.pl.md)
 
-An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu AI) platform directly into Microsoft Excel — chat with an AI agent that can read, write, format, chart and automate your spreadsheets.
+**A free, open-source Excel add-in powered by Z.AI (Zhipu AI)** — Chat with an AI assistant that can read, write, format, chart, and automate your spreadsheets. Perfect for data analysis, report automation, and Excel productivity.
 
-> ⚠️ **Disclaimer:** This is an unofficial, community add-in. It is not affiliated with, endorsed by, or in any way officially connected to Zhipu AI / Z.AI.
+> ⚠️ **Disclaimer:** This is an unofficial, community-developed add-in. It is not affiliated with, endorsed by, or in any way officially connected to Zhipu AI / Z.AI.
 
 ![Demo](show-reel.gif)
 
@@ -47,15 +54,16 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 
 ## Features
 
-- **Side-panel AI chat** — Custom Task Pane docked to the right
-- **WPF interface** — chat bubbles, Excel-green theme, typing animation, emoji support
-- **28 Excel tools** — the AI can read/write cells, format ranges, create charts, pivot tables, filters, and more
-- **12 models** — full catalog with pricing (free flash models included)
-- **8 languages** — auto-detected from Windows locale
-- **Loop detection** — prevents the AI from repeating the same operations endlessly
-- **Dedicated Ribbon tab** — login, model select, language, balance link, logs, about
+✨ **Key Highlights:**
 
-### AI Tools
+- 🤖 **AI-Powered Automation** — 28 Excel tools for reading, writing, formatting, charting, and more
+- 💬 **Side-Panel Chat Interface** — Beautiful WPF interface with typing animation and emoji support
+- 🆓 **Free to Use** — Open-source MIT license, works with Z.AI's free tier models
+- 🌍 **Multilingual** — 8 languages supported (EN, PL, DE, FR, ES, UK, ZH, JA)
+- 🚀 **Fast Performance** — Optimized with screen updating controls and loop detection
+- 🎨 **Excel Native** — Custom ribbon tab and task pane, feels like built-in Excel features
+
+### Capabilities
 
 | Tool | Description |
 |------|-------------|
@@ -149,4 +157,40 @@ The original VBA add-in (`.xlam`) is preserved in the [`legacy/`](legacy/) direc
 
 ## License
 
-Open-source community project. Uses the [Z.AI API](https://z.ai) — an account and API key are required.
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.
+
+**Open-source and free to use.** Uses the [Z.AI API](https://z.ai) — an account and API key are required (free tier available).
+
+## Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before submitting pull requests.
+
+### Ways to Contribute
+
+- 🐛 Report bugs and issues
+- 💡 Suggest new features or improvements
+- 📝 Improve documentation
+- 🔧 Submit bug fixes or enhancements
+- 🌍 Add translations for new languages
+- ⭐ Star the repository to show support
+
+## Security
+
+For security issues, please see our [Security Policy](SECURITY.md). Do not report security vulnerabilities through public GitHub issues.
+
+## Support
+
+- 📖 [Documentation](README.md) — Installation and usage guide
+- 💬 [GitHub Discussions](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/discussions) — Ask questions and share ideas
+- 🐛 [Issue Tracker](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/issues) — Report bugs and request features
+- 🌐 [Z.AI Platform](https://z.ai) — Official API documentation
+
+## Acknowledgments
+
+- Built with [ExcelDna](https://excel-dna.net/) for COM add-in infrastructure
+- Powered by [Z.AI](https://z.ai) GLM models from Zhipu AI
+- Inspired by the need for AI-powered Excel automation
+
+## Keywords
+
+`excel` `ai` `automation` `chatbot` `add-in` `excel-addin` `dotnet` `csharp` `zhipu-ai` `glm` `spreadsheet` `productivity` `data-analysis` `excel-automation` `ai-assistant` `free` `open-source` `windows` `excel-tools` `pivot-table` `charts` `formatting`

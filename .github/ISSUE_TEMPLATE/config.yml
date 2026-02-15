@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Z.AI API Documentation
+    url: https://z.ai
+    about: Official Z.AI platform and API documentation
+  - name: GitHub Discussions
+    url: https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/discussions
+    about: Ask questions and discuss ideas with the community
