@@ -9,6 +9,18 @@ public class RibbonController : ExcelRibbon
     private CustomTaskPane? _chatPane;
     private IRibbonUI? _ribbon;
 
+    // Known z.ai models with pricing emoji
+    public static readonly (string Id, string Display)[] KnownModels =
+    [
+        ("glm-4-plus",  "GLM-4 Plus       \U0001f4b0\U0001f4b0  (domyślny, szybki)"),
+        ("glm-4-long",  "GLM-4 Long       \U0001f4b0\U0001f4b0  (długi kontekst 128k)"),
+        ("glm-4-flash", "GLM-4 Flash      ⚡ FREE  (szybki, darmowy!)"),
+        ("glm-4",       "GLM-4            \U0001f4b0   (standardowy)"),
+        ("glm-4-air",   "GLM-4 Air        \U0001f4b0   (lekki)"),
+        ("glm-3-turbo", "GLM-3 Turbo      ⚡ tani  (najszybszy)"),
+        ("glm-4v-plus", "GLM-4V Plus      \U0001f4b0\U0001f4b0\U0001f4b0 (vision, obrazy)"),
+    ];
+
     public override string GetCustomUI(string ribbonID)
     {
         return @"
@@ -16,31 +28,33 @@ public class RibbonController : ExcelRibbon
   <ribbon>
     <tabs>
       <tab id='zaiTab' label='Z.AI'>
-        <group id='grpMain' label='Assistant'>
-          <button id='btnChat' label='💬 Chat' size='large'
+        <group id='grpMain' getLabel='GetGroupLabel'>
+          <button id='btnChat' getLabel='GetLabel' size='large'
                   onAction='OnToggleChat' imageMso='BlogOpenExisting'
-                  screentip='Toggle AI Chat Panel' supertip='Open or close the Z.AI assistant chat panel'/>
+                  screentip='Toggle AI Chat Panel'/>
           <separator id='sep1'/>
-          <button id='btnLogin' label='Login' size='normal'
+          <button id='btnLogin' getLabel='GetLabel' size='normal'
                   onAction='OnLogin' imageMso='ProtectForm'
-                  screentip='Login with API Key'/>
-          <button id='btnLogout' label='Logout' size='normal'
+                  getEnabled='GetLoginEnabled'/>
+          <button id='btnLogout' getLabel='GetLabel' size='normal'
                   onAction='OnLogout' imageMso='ReviewDeleteComment'
-                  screentip='Remove API Key'/>
-          <button id='btnModel' label='Model' size='normal'
-                  onAction='OnSelectModel' imageMso='ServerSettings'
-                  screentip='Select AI Model'/>
+                  getEnabled='GetLogoutEnabled'/>
+          <separator id='sep2'/>
+          <button id='btnModel' getLabel='GetLabel' size='normal'
+                  onAction='OnSelectModel' imageMso='ServerSettings'/>
         </group>
-        <group id='grpTools' label='Tools'>
-          <button id='btnLang' label='Language' size='normal'
-                  onAction='OnLanguage' imageMso='ReviewTranslate'
-                  screentip='Change UI Language'/>
-          <button id='btnLog' label='View Log' size='normal'
-                  onAction='OnViewLog' imageMso='VisualBasicModule'
-                  screentip='Open Debug Log'/>
-          <button id='btnAbout' label='About' size='normal'
-                  onAction='OnAbout' imageMso='Info'
-                  screentip='About Z.AI Add-in'/>
+        <group id='grpInfo' getLabel='GetGroupLabel'>
+          <labelControl id='lblStatus' getLabel='GetStatusLabel'/>
+          <button id='btnAddTokens' getLabel='GetLabel' size='normal'
+                  onAction='OnAddTokens' imageMso='CurrencyFormatGallery'/>
+        </group>
+        <group id='grpTools' getLabel='GetGroupLabel'>
+          <button id='btnLang' getLabel='GetLabel' size='normal'
+                  onAction='OnLanguage' imageMso='ReviewTranslate'/>
+          <button id='btnLog' getLabel='GetLabel' size='normal'
+                  onAction='OnViewLog' imageMso='VisualBasicModule'/>
+          <button id='btnAbout' getLabel='GetLabel' size='normal'
+                  onAction='OnAbout' imageMso='Info'/>
         </group>
       </tab>
     </tabs>
@@ -48,11 +62,51 @@ public class RibbonController : ExcelRibbon
 </customUI>";
     }
 
-    public void OnRibbonLoad(IRibbonUI ribbonUI)
+    public void OnRibbonLoad(IRibbonUI ribbonUI) => _ribbon = ribbonUI;
+    public void RefreshRibbon() => _ribbon?.Invalidate();
+
+    // ═══ Dynamic labels ═══
+    public string GetLabel(IRibbonControl control)
     {
-        _ribbon = ribbonUI;
+        var t = AddIn.I18n;
+        return control.Id switch
+        {
+            "btnChat"      => "\U0001f4ac " + t.T("menu.chat"),
+            "btnLogin"     => "\U0001f511 " + t.T("menu.login"),
+            "btnLogout"    => "\U0001f6aa " + t.T("menu.logout"),
+            "btnModel"     => "\U0001f916 " + t.T("menu.model"),
+            "btnAddTokens" => "\U0001f4b0 " + t.T("menu.add_tokens"),
+            "btnLang"      => "\U0001f310 " + t.T("menu.language"),
+            "btnLog"       => "\U0001f4cb " + t.T("menu.viewlog"),
+            "btnAbout"     => "\u2139\ufe0f " + t.T("menu.about"),
+            _ => control.Id
+        };
     }
 
+    public string GetGroupLabel(IRibbonControl control)
+    {
+        var t = AddIn.I18n;
+        return control.Id switch
+        {
+            "grpMain"  => t.T("ribbon.group_main"),
+            "grpInfo"  => t.T("ribbon.group_info"),
+            "grpTools" => t.T("ribbon.group_tools"),
+            _ => control.Id
+        };
+    }
+
+    public string GetStatusLabel(IRibbonControl control)
+    {
+        return AddIn.Auth.IsLoggedIn()
+            ? "\u2705 " + AddIn.I18n.T("ribbon.logged_in")
+            : "\u274c " + AddIn.I18n.T("ribbon.not_logged");
+    }
+
+    // ═══ Enabled states ═══
+    public bool GetLoginEnabled(IRibbonControl control) => !AddIn.Auth.IsLoggedIn();
+    public bool GetLogoutEnabled(IRibbonControl control) => AddIn.Auth.IsLoggedIn();
+
+    // ═══ Actions ═══
     public void OnToggleChat(IRibbonControl control)
     {
         try
@@ -72,29 +126,45 @@ public class RibbonController : ExcelRibbon
         {
             AddIn.Logger.Error($"Toggle chat error: {ex.Message}");
             System.Windows.Forms.MessageBox.Show(
-                $"Error opening chat panel:\n{ex.Message}",
+                $"Error opening chat panel:\n{ex.Message}\n\n" +
+                AddIn.I18n.T("error.ctp_hint"),
                 "Z.AI", System.Windows.Forms.MessageBoxButtons.OK,
                 System.Windows.Forms.MessageBoxIcon.Error);
         }
     }
 
-    public void OnLogin(IRibbonControl control) => AddIn.Auth.ShowLogin();
-    public void OnLogout(IRibbonControl control) => AddIn.Auth.ShowLogout();
+    public void OnLogin(IRibbonControl control)
+    {
+        // Open z.ai API keys page in browser
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+        catch { }
+
+        AddIn.Auth.ShowLogin();
+        _ribbon?.Invalidate(); // refresh Login/Logout enabled state + status
+    }
+
+    public void OnLogout(IRibbonControl control)
+    {
+        AddIn.Auth.ShowLogout();
+        _ribbon?.Invalidate();
+    }
 
     public void OnSelectModel(IRibbonControl control)
     {
-        var i18n = AddIn.I18n;
         var current = AddIn.Auth.LoadModel();
-        var input = Microsoft.VisualBasic.Interaction.InputBox(
-            i18n.T("model.prompt") + "\n\n" + i18n.T("model.current") + current,
-            i18n.T("model.title"), current);
-        if (!string.IsNullOrWhiteSpace(input))
+        var items = KnownModels.Select(m => m.Display).ToArray();
+        var keyMap = KnownModels.ToDictionary(m => m.Id, m => m.Display);
+
+        using var dlg = new UI.SelectDialog(
+            AddIn.I18n.T("model.title"),
+            AddIn.I18n.T("model.prompt"),
+            items, current, keyMap);
+
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
-            AddIn.Auth.SaveModel(input.Trim());
-            System.Windows.Forms.MessageBox.Show(
-                i18n.T("model.changed") + input.Trim(),
-                "Z.AI", System.Windows.Forms.MessageBoxButtons.OK,
-                System.Windows.Forms.MessageBoxIcon.Information);
+            AddIn.Auth.SaveModel(dlg.SelectedKey);
+            _ribbon?.Invalidate();
         }
     }
 
@@ -102,23 +172,26 @@ public class RibbonController : ExcelRibbon
     {
         var langs = Services.I18nService.SupportedLanguages;
         var current = AddIn.I18n.CurrentLanguage;
-        var list = string.Join("\n", langs.Select(l => $"  {l.Key} - {l.Value}"));
-        var input = Microsoft.VisualBasic.Interaction.InputBox(
-            $"Select language / Wybierz język:\n\n{list}\n\nCurrent: {current}",
-            "Z.AI - Language", current);
-        if (!string.IsNullOrWhiteSpace(input))
+        var items = langs.Select(l => $"{l.Key}  —  {l.Value}").ToArray();
+        var keyMap = langs.ToDictionary(l => l.Key, l => l.Value);
+
+        using var dlg = new UI.SelectDialog(
+            AddIn.I18n.T("lang.title"),
+            AddIn.I18n.T("lang.select_prompt"),
+            items, current, keyMap);
+
+        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
-            var code = input.Trim().ToLower();
-            if (langs.ContainsKey(code))
-            {
-                AddIn.I18n.SetLanguage(code);
-                _ribbon?.Invalidate();
-                System.Windows.Forms.MessageBox.Show(
-                    AddIn.I18n.T("lang.changed"),
-                    "Z.AI", System.Windows.Forms.MessageBoxButtons.OK,
-                    System.Windows.Forms.MessageBoxIcon.Information);
-            }
+            AddIn.I18n.SetLanguage(dlg.SelectedKey);
+            _ribbon?.Invalidate(); // This refreshes all getLabel/getEnabled callbacks
         }
+    }
+
+    public void OnAddTokens(IRibbonControl control)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+        catch { }
     }
 
     public void OnViewLog(IRibbonControl control) => AddIn.Logger.ViewLog();

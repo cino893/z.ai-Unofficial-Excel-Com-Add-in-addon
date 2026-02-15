@@ -59,9 +59,9 @@ public class ZaiApiService
             }
             else
             {
-                var error = $"HTTP {(int)response.StatusCode}: {responseBody[..Math.Min(500, responseBody.Length)]}";
-                AddIn.Logger.Error($"API error: {error}");
-                return (false, null, error);
+                var friendlyError = TranslateApiError((int)response.StatusCode, responseBody);
+                AddIn.Logger.Error($"API error: HTTP {(int)response.StatusCode}");
+                return (false, null, friendlyError);
             }
         }
         catch (Exception ex)
@@ -95,5 +95,37 @@ public class ZaiApiService
     public static JsonObject? GetAssistantMessage(JsonNode data)
     {
         return data?["choices"]?[0]?["message"]?.AsObject();
+    }
+
+    /// <summary>Translate z.ai Chinese error messages to user-friendly language.</summary>
+    private string TranslateApiError(int httpCode, string body)
+    {
+        var t = AddIn.I18n;
+        try
+        {
+            var json = JsonNode.Parse(body);
+            var code = json?["error"]?["code"]?.GetValue<string>() ?? "";
+            return code switch
+            {
+                "1261" => t.T("error.balance_empty"),     // 额度已用完
+                "1301" => t.T("error.content_filter"),     // 内容审核
+                "1302" => t.T("error.content_filter"),
+                _ => httpCode switch
+                {
+                    401 => t.T("error.invalid_key"),
+                    429 => t.T("error.rate_limit"),
+                    _ => t.T("error.api_generic") + $" (HTTP {httpCode})"
+                }
+            };
+        }
+        catch
+        {
+            return httpCode switch
+            {
+                401 => t.T("error.invalid_key"),
+                429 => t.T("error.rate_limit"),
+                _ => t.T("error.api_generic") + $" (HTTP {httpCode})"
+            };
+        }
     }
 }

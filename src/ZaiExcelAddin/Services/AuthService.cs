@@ -1,4 +1,6 @@
+using System.Drawing;
 using System.Net.Http;
+using System.Windows.Forms;
 using Microsoft.Win32;
 
 namespace ZaiExcelAddin.Services;
@@ -85,38 +87,88 @@ public class AuthService
     {
         var i18n = AddIn.I18n;
         var current = LoadApiKey();
-        var prompt = i18n.T("auth.prompt");
-        if (!string.IsNullOrEmpty(current))
-            prompt += $"\n\n{i18n.T("auth.current_key")}{current[..Math.Min(8, current.Length)]}...";
 
-        var key = Microsoft.VisualBasic.Interaction.InputBox(prompt, i18n.T("auth.login_title"));
-        if (string.IsNullOrWhiteSpace(key))
+        using var dlg = new Form
         {
-            if (string.IsNullOrEmpty(current))
-                System.Windows.Forms.MessageBox.Show(
-                    i18n.T("auth.cancelled"), "Z.AI",
-                    System.Windows.Forms.MessageBoxButtons.OK,
-                    System.Windows.Forms.MessageBoxIcon.Warning);
-            return;
-        }
+            Text = i18n.T("auth.login_title"),
+            Size = new Size(420, 250),
+            StartPosition = FormStartPosition.CenterScreen,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            MaximizeBox = false, MinimizeBox = false,
+            BackColor = Color.White,
+            Font = new Font("Segoe UI", 9.5f)
+        };
 
-        key = key.Trim();
+        var lbl = new Label
+        {
+            Text = i18n.T("auth.prompt"),
+            Location = new Point(16, 16), Size = new Size(370, 40)
+        };
+        var txtKey = new TextBox
+        {
+            Location = new Point(16, 62), Size = new Size(370, 28),
+            UseSystemPasswordChar = true,
+            Text = current
+        };
+        var chkShow = new CheckBox
+        {
+            Text = i18n.T("auth.show_key"), AutoSize = true,
+            Location = new Point(16, 96)
+        };
+        chkShow.CheckedChanged += (_, _) => txtKey.UseSystemPasswordChar = !chkShow.Checked;
+
+        var btnOpenSite = new Button
+        {
+            Text = "\U0001f310 " + i18n.T("auth.open_site"),
+            Location = new Point(16, 135), Size = new Size(180, 32),
+            FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand,
+            BackColor = Color.FromArgb(240, 240, 240)
+        };
+        btnOpenSite.Click += (_, _) =>
+        {
+            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+            catch { }
+        };
+
+        var btnOk = new Button
+        {
+            Text = "OK",
+            Location = new Point(220, 135), Size = new Size(80, 32),
+            DialogResult = DialogResult.OK,
+            BackColor = Color.FromArgb(102, 126, 234),
+            ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand
+        };
+        btnOk.FlatAppearance.BorderSize = 0;
+
+        var btnCancel = new Button
+        {
+            Text = i18n.T("select.cancel") ?? "Cancel",
+            Location = new Point(306, 135), Size = new Size(80, 32),
+            DialogResult = DialogResult.Cancel,
+            FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand
+        };
+
+        dlg.Controls.AddRange(new Control[] { lbl, txtKey, chkShow, btnOpenSite, btnOk, btnCancel });
+        dlg.AcceptButton = btnOk;
+        dlg.CancelButton = btnCancel;
+
+        if (dlg.ShowDialog() != DialogResult.OK) return;
+
+        var key = txtKey.Text.Trim();
+        if (string.IsNullOrEmpty(key)) return;
+
         if (ValidateApiKey(key))
         {
             SaveApiKey(key);
-            System.Windows.Forms.MessageBox.Show(
-                i18n.T("auth.success"), "Z.AI",
-                System.Windows.Forms.MessageBoxButtons.OK,
-                System.Windows.Forms.MessageBoxIcon.Information);
+            MessageBox.Show(i18n.T("auth.success"), "Z.AI",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
         {
-            var result = System.Windows.Forms.MessageBox.Show(
-                i18n.T("auth.failed"), "Z.AI",
-                System.Windows.Forms.MessageBoxButtons.YesNo,
-                System.Windows.Forms.MessageBoxIcon.Question);
-            if (result == System.Windows.Forms.DialogResult.Yes)
-                SaveApiKey(key);
+            var result = MessageBox.Show(i18n.T("auth.failed"), "Z.AI",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes) SaveApiKey(key);
         }
     }
 
@@ -125,17 +177,15 @@ public class AuthService
         var i18n = AddIn.I18n;
         if (!IsLoggedIn())
         {
-            System.Windows.Forms.MessageBox.Show(i18n.T("auth.not_logged"), "Z.AI");
+            MessageBox.Show(i18n.T("auth.not_logged"), "Z.AI");
             return;
         }
-        var result = System.Windows.Forms.MessageBox.Show(
-            i18n.T("auth.confirm_logout"), "Z.AI",
-            System.Windows.Forms.MessageBoxButtons.YesNo,
-            System.Windows.Forms.MessageBoxIcon.Question);
-        if (result == System.Windows.Forms.DialogResult.Yes)
+        var result = MessageBox.Show(i18n.T("auth.confirm_logout"), "Z.AI",
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (result == DialogResult.Yes)
         {
             ClearApiKey();
-            System.Windows.Forms.MessageBox.Show(i18n.T("auth.logged_out"), "Z.AI");
+            MessageBox.Show(i18n.T("auth.logged_out"), "Z.AI");
         }
     }
 }

@@ -107,6 +107,7 @@ public class I18nService
         InitUkrainian();
         InitChinese();
         InitJapanese();
+        AddExtraKeys();
     }
 
     // ── English ──────────────────────────────────────────────────────────
@@ -675,5 +676,189 @@ public class I18nService
             // System prompt
             ["system.prompt"] = "あなたは Z.AI アドインを通じて Microsoft Excel に統合された AI アシスタントです。Excel ブックを読み取りおよび変更できるツールにアクセスできます。\n\n従うべきルール：\n1. 操作を行う前に、必ず最初に get_sheet_info または get_workbook_info を呼び出して、ブックの現在の状態を把握してください。\n2. データを変更する前に必ず読み取ってください。セルの内容を推測してはいけません。\n3. 変更を行った後、影響を受けたセルを読み返して、何が行われたかを確認してください。\n4. すべての数式は英語の関数名で記述してください（SUM、AVERAGE、IF、VLOOKUP、COUNT、MAX、MIN など）。\n5. 色を設定する際は、RGB Long 値を使用してください：Red=255、Green=65280、Blue=16711680、Yellow=65535、White=16777215、Black=0。\n6. ユーザーが特に指定しない限り、アクティブシートをデフォルトとしてください。\n7. グラフを作成する前に list_charts を呼び出してください。類似のグラフが既に存在する場合は、新しいグラフを作成する前に削除してください。\n8. 既に正常に完了した操作を繰り返さないでください。\n9. ユーザーとは日本語でコミュニケーションしてください。\n10. 簡潔で役立つ応答をしてください。何をしているかをステップごとに説明してください。"
         };
+    }
+
+    // ── Extra keys (added to all languages) ──────────────────────────────
+
+    private void AddExtraKeys()
+    {
+        var extras = new Dictionary<string, Dictionary<string, string>>
+        {
+            ["en"] = new()
+            {
+                ["ribbon.group_main"] = "Assistant",
+                ["ribbon.group_info"] = "Status",
+                ["ribbon.group_tools"] = "Tools",
+                ["ribbon.logged_in"] = "Logged in",
+                ["ribbon.not_logged"] = "Not logged in",
+                ["menu.add_tokens"] = "Add Tokens",
+                ["auth.show_key"] = "Show key",
+                ["auth.open_site"] = "Get API Key on z.ai",
+                ["select.cancel"] = "Cancel",
+                ["error.balance_empty"] = "⚠️ Your API balance is empty.\nPlease add tokens at open.z.ai to continue using the AI assistant.",
+                ["error.content_filter"] = "⚠️ Your message was blocked by the content filter.\nPlease rephrase and try again.",
+                ["error.invalid_key"] = "⚠️ Invalid API key.\nPlease check your key and log in again.",
+                ["error.rate_limit"] = "⚠️ Too many requests.\nPlease wait a moment and try again.",
+                ["error.api_generic"] = "⚠️ An API error occurred.",
+                ["error.ctp_hint"] = "Try restarting Excel.\nIf the error persists, the chat panel may not be supported in this Excel version.",
+                ["about.text"] = "Z.AI Excel Add-in\nVersion 2.0\n\nAI-powered assistant for Microsoft Excel.\nPowered by ZhipuAI GLM models.\n\n⚠️ DISCLAIMER:\nThis is an UNOFFICIAL add-in.\nNot affiliated with, endorsed by, or\nassociated with z.ai / Zhipu AI in any way.\nAll rights belong to their respective owners.",
+                ["model.prompt"] = "Select an AI model.\n\U0001f4b0 = paid, ⚡ = cheap/free:",
+                ["lang.select_prompt"] = "Select interface language:",
+            },
+            ["pl"] = new()
+            {
+                ["ribbon.group_main"] = "Asystent",
+                ["ribbon.group_info"] = "Status",
+                ["ribbon.group_tools"] = "Narzędzia",
+                ["ribbon.logged_in"] = "Zalogowano",
+                ["ribbon.not_logged"] = "Nie zalogowano",
+                ["menu.add_tokens"] = "Doładuj tokeny",
+                ["auth.show_key"] = "Pokaż klucz",
+                ["auth.open_site"] = "Pobierz klucz API na z.ai",
+                ["select.cancel"] = "Anuluj",
+                ["error.balance_empty"] = "⚠️ Twoje saldo API jest puste.\nDoładuj tokeny na open.z.ai, aby kontynuować korzystanie z asystenta AI.",
+                ["error.content_filter"] = "⚠️ Twoja wiadomość została zablokowana przez filtr treści.\nPrzeformułuj i spróbuj ponownie.",
+                ["error.invalid_key"] = "⚠️ Nieprawidłowy klucz API.\nSprawdź klucz i zaloguj się ponownie.",
+                ["error.rate_limit"] = "⚠️ Zbyt wiele zapytań.\nPoczekaj chwilę i spróbuj ponownie.",
+                ["error.api_generic"] = "⚠️ Wystąpił błąd API.",
+                ["error.ctp_hint"] = "Spróbuj zrestartować Excela.\nJeśli błąd się powtarza, panel czatu może nie być obsługiwany w tej wersji Excela.",
+                ["about.text"] = "Z.AI Dodatek do Excela\nWersja 2.0\n\nAsystent AI dla Microsoft Excel.\nWykorzystuje modele ZhipuAI GLM.\n\n⚠️ ZASTRZEŻENIE:\nTo jest NIEOFICJALNY dodatek.\nNie jest powiązany z, zatwierdzony przez,\nani stowarzyszony z z.ai / Zhipu AI.\nWszelkie prawa należą do ich właścicieli.",
+                ["model.prompt"] = "Wybierz model AI.\n\U0001f4b0 = płatny, ⚡ = tani/darmowy:",
+                ["lang.select_prompt"] = "Wybierz język interfejsu:",
+            },
+            ["de"] = new()
+            {
+                ["ribbon.group_main"] = "Assistent",
+                ["ribbon.group_info"] = "Status",
+                ["ribbon.group_tools"] = "Werkzeuge",
+                ["ribbon.logged_in"] = "Eingeloggt",
+                ["ribbon.not_logged"] = "Nicht eingeloggt",
+                ["menu.add_tokens"] = "Tokens aufladen",
+                ["auth.show_key"] = "Schlüssel anzeigen",
+                ["auth.open_site"] = "API-Schlüssel auf z.ai holen",
+                ["select.cancel"] = "Abbrechen",
+                ["error.balance_empty"] = "⚠️ Ihr API-Guthaben ist leer.\nBitte laden Sie Tokens auf open.z.ai auf.",
+                ["error.content_filter"] = "⚠️ Ihre Nachricht wurde vom Inhaltsfilter blockiert.",
+                ["error.invalid_key"] = "⚠️ Ungültiger API-Schlüssel.",
+                ["error.rate_limit"] = "⚠️ Zu viele Anfragen. Bitte warten.",
+                ["error.api_generic"] = "⚠️ Ein API-Fehler ist aufgetreten.",
+                ["error.ctp_hint"] = "Versuchen Sie Excel neu zu starten.",
+                ["about.text"] = "Z.AI Excel Add-in\nVersion 2.0\n\nKI-Assistent für Microsoft Excel.\nBetrieben mit ZhipuAI GLM-Modellen.\n\n⚠️ HAFTUNGSAUSSCHLUSS:\nDies ist ein INOFFIZIELLES Add-in.\nNicht verbunden mit z.ai / Zhipu AI.",
+                ["model.prompt"] = "KI-Modell wählen.\n\U0001f4b0 = kostenpflichtig, ⚡ = günstig/kostenlos:",
+                ["lang.select_prompt"] = "Sprache wählen:",
+            },
+            ["fr"] = new()
+            {
+                ["ribbon.group_main"] = "Assistant",
+                ["ribbon.group_info"] = "Statut",
+                ["ribbon.group_tools"] = "Outils",
+                ["ribbon.logged_in"] = "Connecté",
+                ["ribbon.not_logged"] = "Non connecté",
+                ["menu.add_tokens"] = "Recharger les tokens",
+                ["auth.show_key"] = "Afficher la clé",
+                ["auth.open_site"] = "Obtenir une clé API sur z.ai",
+                ["select.cancel"] = "Annuler",
+                ["error.balance_empty"] = "⚠️ Votre solde API est vide.\nRechargez vos tokens sur open.z.ai.",
+                ["error.content_filter"] = "⚠️ Votre message a été bloqué par le filtre.",
+                ["error.invalid_key"] = "⚠️ Clé API invalide.",
+                ["error.rate_limit"] = "⚠️ Trop de requêtes. Veuillez patienter.",
+                ["error.api_generic"] = "⚠️ Une erreur API s'est produite.",
+                ["error.ctp_hint"] = "Essayez de redémarrer Excel.",
+                ["about.text"] = "Z.AI Complément Excel\nVersion 2.0\n\nAssistant IA pour Microsoft Excel.\nAlimenté par les modèles ZhipuAI GLM.\n\n⚠️ AVERTISSEMENT:\nCeci est un complément NON OFFICIEL.\nNon affilié à z.ai / Zhipu AI.",
+                ["model.prompt"] = "Sélectionnez un modèle IA.\n\U0001f4b0 = payant, ⚡ = économique/gratuit:",
+                ["lang.select_prompt"] = "Sélectionnez la langue:",
+            },
+            ["es"] = new()
+            {
+                ["ribbon.group_main"] = "Asistente",
+                ["ribbon.group_info"] = "Estado",
+                ["ribbon.group_tools"] = "Herramientas",
+                ["ribbon.logged_in"] = "Conectado",
+                ["ribbon.not_logged"] = "No conectado",
+                ["menu.add_tokens"] = "Recargar tokens",
+                ["auth.show_key"] = "Mostrar clave",
+                ["auth.open_site"] = "Obtener clave API en z.ai",
+                ["select.cancel"] = "Cancelar",
+                ["error.balance_empty"] = "⚠️ Su saldo API está vacío.\nRecargue tokens en open.z.ai.",
+                ["error.content_filter"] = "⚠️ Su mensaje fue bloqueado por el filtro.",
+                ["error.invalid_key"] = "⚠️ Clave API inválida.",
+                ["error.rate_limit"] = "⚠️ Demasiadas solicitudes. Espere un momento.",
+                ["error.api_generic"] = "⚠️ Ocurrió un error de API.",
+                ["error.ctp_hint"] = "Intente reiniciar Excel.",
+                ["about.text"] = "Z.AI Complemento de Excel\nVersión 2.0\n\nAsistente de IA para Microsoft Excel.\nImpulsado por modelos ZhipuAI GLM.\n\n⚠️ AVISO:\nEste es un complemento NO OFICIAL.\nNo afiliado a z.ai / Zhipu AI.",
+                ["model.prompt"] = "Seleccione un modelo de IA.\n\U0001f4b0 = de pago, ⚡ = económico/gratis:",
+                ["lang.select_prompt"] = "Seleccione el idioma:",
+            },
+            ["uk"] = new()
+            {
+                ["ribbon.group_main"] = "Асистент",
+                ["ribbon.group_info"] = "Статус",
+                ["ribbon.group_tools"] = "Інструменти",
+                ["ribbon.logged_in"] = "Увійшли",
+                ["ribbon.not_logged"] = "Не увійшли",
+                ["menu.add_tokens"] = "Поповнити токени",
+                ["auth.show_key"] = "Показати ключ",
+                ["auth.open_site"] = "Отримати ключ API на z.ai",
+                ["select.cancel"] = "Скасувати",
+                ["error.balance_empty"] = "⚠️ Ваш баланс API порожній.\nПоповніть токени на open.z.ai.",
+                ["error.content_filter"] = "⚠️ Ваше повідомлення заблоковано фільтром контенту.",
+                ["error.invalid_key"] = "⚠️ Недійсний ключ API.",
+                ["error.rate_limit"] = "⚠️ Забагато запитів. Зачекайте.",
+                ["error.api_generic"] = "⚠️ Помилка API.",
+                ["error.ctp_hint"] = "Спробуйте перезапустити Excel.",
+                ["about.text"] = "Z.AI Додаток для Excel\nВерсія 2.0\n\nAI-асистент для Microsoft Excel.\nПрацює на моделях ZhipuAI GLM.\n\n⚠️ ЗАСТЕРЕЖЕННЯ:\nЦе НЕОФІЦІЙНИЙ додаток.\nНе пов'язаний з z.ai / Zhipu AI.",
+                ["model.prompt"] = "Оберіть модель AI.\n\U0001f4b0 = платна, ⚡ = дешева/безкоштовна:",
+                ["lang.select_prompt"] = "Оберіть мову інтерфейсу:",
+            },
+            ["zh"] = new()
+            {
+                ["ribbon.group_main"] = "助手",
+                ["ribbon.group_info"] = "状态",
+                ["ribbon.group_tools"] = "工具",
+                ["ribbon.logged_in"] = "已登录",
+                ["ribbon.not_logged"] = "未登录",
+                ["menu.add_tokens"] = "充值令牌",
+                ["auth.show_key"] = "显示密钥",
+                ["auth.open_site"] = "在 z.ai 获取 API 密钥",
+                ["select.cancel"] = "取消",
+                ["error.balance_empty"] = "⚠️ 您的API余额已用完。\n请在 open.z.ai 充值以继续使用。",
+                ["error.content_filter"] = "⚠️ 您的消息被内容过滤器拦截。\n请修改后重试。",
+                ["error.invalid_key"] = "⚠️ API密钥无效。\n请检查密钥并重新登录。",
+                ["error.rate_limit"] = "⚠️ 请求过多。\n请稍后再试。",
+                ["error.api_generic"] = "⚠️ 发生API错误。",
+                ["error.ctp_hint"] = "请尝试重启Excel。",
+                ["about.text"] = "Z.AI Excel 插件\n版本 2.0\n\n适用于 Microsoft Excel 的 AI 助手。\n由 ZhipuAI GLM 模型驱动。\n\n⚠️ 免责声明：\n这是一个非官方插件。\n与 z.ai / 智谱AI 无关。",
+                ["model.prompt"] = "选择AI模型。\n\U0001f4b0 = 付费，⚡ = 便宜/免费：",
+                ["lang.select_prompt"] = "选择界面语言：",
+            },
+            ["ja"] = new()
+            {
+                ["ribbon.group_main"] = "アシスタント",
+                ["ribbon.group_info"] = "ステータス",
+                ["ribbon.group_tools"] = "ツール",
+                ["ribbon.logged_in"] = "ログイン中",
+                ["ribbon.not_logged"] = "未ログイン",
+                ["menu.add_tokens"] = "トークンを追加",
+                ["auth.show_key"] = "キーを表示",
+                ["auth.open_site"] = "z.ai で API キーを取得",
+                ["select.cancel"] = "キャンセル",
+                ["error.balance_empty"] = "⚠️ APIの残高がなくなりました。\nopen.z.ai でトークンを追加してください。",
+                ["error.content_filter"] = "⚠️ メッセージがコンテンツフィルターでブロックされました。",
+                ["error.invalid_key"] = "⚠️ APIキーが無効です。",
+                ["error.rate_limit"] = "⚠️ リクエストが多すぎます。しばらくお待ちください。",
+                ["error.api_generic"] = "⚠️ APIエラーが発生しました。",
+                ["error.ctp_hint"] = "Excelを再起動してみてください。",
+                ["about.text"] = "Z.AI Excel アドイン\nバージョン 2.0\n\nMicrosoft Excel 用 AI アシスタント。\nZhipuAI GLM モデルで動作。\n\n⚠️ 免責事項：\nこれは非公式アドインです。\nz.ai / Zhipu AI とは無関係です。",
+                ["model.prompt"] = "AIモデルを選択。\n\U0001f4b0 = 有料、⚡ = 安い/無料：",
+                ["lang.select_prompt"] = "インターフェース言語を選択：",
+            }
+        };
+
+        foreach (var (lang, keys) in extras)
+        {
+            if (!_translations.ContainsKey(lang)) continue;
+            foreach (var (key, val) in keys)
+                _translations[lang][key] = val;
+        }
     }
 }
