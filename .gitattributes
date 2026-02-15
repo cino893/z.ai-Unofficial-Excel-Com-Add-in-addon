@@ -1,0 +1,26 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cs text diff=csharp
+*.csproj text
+*.sln text
+*.config text
+*.xaml text
+
+# Documentation
+*.md text
+*.txt text
+
+# Scripts
+*.ps1 text
+*.sh text
+*.vbs text
+
+# JSON & YAML
+*.json text
+*.yml text
+*.yaml text
+
+# Exclude legacy VBA from language statistics
+legacy/** linguist-vendored
