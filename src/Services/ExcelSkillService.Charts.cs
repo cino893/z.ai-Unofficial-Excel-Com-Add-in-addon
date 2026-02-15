@@ -313,6 +313,7 @@ public partial class ExcelSkillService
 
         if (!string.IsNullOrEmpty(sourceName))
         {
+            // First try: enumerate PivotTables per sheet
             foreach (dynamic sheet in wb.Worksheets)
             {
                 try
@@ -328,7 +329,26 @@ public partial class ExcelSkillService
                     }
                     if (foundPivot != null) break;
                 }
-                catch { /* sheet may not have pivot tables */ }
+                catch { /* enumeration may fail (TYPE_E_INVDATAREAD) */ }
+            }
+
+            // Fallback: direct name lookup — may work when enumeration fails
+            if (foundPivot == null)
+            {
+                foreach (dynamic sheet in wb.Worksheets)
+                {
+                    try
+                    {
+                        dynamic pt = sheet.PivotTables(sourceName);
+                        if (pt != null)
+                        {
+                            foundPivot = pt;
+                            pivotSheet = sheet;
+                            break;
+                        }
+                    }
+                    catch { /* not on this sheet */ }
+                }
             }
         }
 
@@ -413,6 +433,13 @@ public partial class ExcelSkillService
                 ["dest_cell"] = destCell
             }.ToJsonString();
         }
+
+        if (!string.IsNullOrEmpty(sourceName))
+            return JsonSerializer.Serialize(new
+            {
+                error = $"Pivot table '{sourceName}' not found. It may not exist, or PivotTable enumeration is unavailable in this workbook.",
+                hint = "Try using source_range instead, or use copy_range to move the data manually."
+            });
 
         return JsonSerializer.Serialize(new { error = "Provide either 'name' (pivot table name) or 'source_range' to move." });
     }
