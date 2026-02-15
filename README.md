@@ -2,136 +2,139 @@
 
 [🇵🇱 Czytaj po polsku](README.pl.md)
 
-Add-in for Microsoft Excel that lets you talk to **z.ai** (Zhipu AI) directly from a worksheet.
+An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu AI) platform directly into Microsoft Excel — chat with an AI agent that can read, write, format, chart and automate your spreadsheets.
 
-**Version 2.0** — rewritten as a .NET COM Add-in with a modern WPF UI (built with Excel-DNA, shipped as `.xll`).
+> ⚠️ **Disclaimer:** This is an unofficial, community add-in. It is not affiliated with, endorsed by, or in any way officially connected to Zhipu AI / Z.AI.
 
-![Showreel](show-reel.gif)
-
-## Project versions
-
-- **v2.0 (.NET COM Add-in)** — main, actively developed project in `src/ZaiExcelAddin` (solution `dodatek-z-ai-opus.sln`).
-- **v1.0 (VBA .xlam)** — legacy project in `legacy`; rebuild with `cscript build.vbs`.
+![Demo](show-reel.gif)
 
 ## Download
 
-- [Latest Excel-DNA (.xll) package for the COM Add-in](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)
+- **[⬇ Download latest .xll](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)**
 - [All releases](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
 
-## ✨ Highlights in v2.0
+## Installation
 
-- **Custom Task Pane** — chat lives on the right side of Excel
-- **Modern WPF UI** — chat bubbles, gradients, animated typing dots, logo
-- **8 languages** — PL, EN, DE, FR, ES, UK, ZH, JA (auto-detected from Windows)
-- **15 AI tools** — incl. `list_charts` and `delete_chart` (chart loop bug fixed)
-- **Loop detection** — stops repeating the same tool forever
-- **Ribbon tab** — dedicated Z.AI buttons
+1. Download the `.xll` file above
+2. Open Excel → **File** → **Options** → **Add-ins**
+3. At the bottom: **Manage** → **Excel Add-ins** → **Go…**
+4. Click **Browse** and select the downloaded `ZaiExcelAddin-AddIn64-packed.xll`
+5. Confirm — the **Z.AI** tab appears on the ribbon
 
-## Capabilities
+> 📖 Need a visual guide? See [How to add an Excel Add-in — with screenshots (Microsoft Support)](https://support.microsoft.com/en-us/office/add-or-remove-add-ins-in-excel-0af570c4-5cf3-4fa9-9b88-403625a0b460).
+
+### Requirements
+
+- Microsoft Excel 2016+ (Windows, 64-bit recommended)
+- [.NET 8.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Z.AI API key — [get one here](https://z.ai/manage-apikey/apikey-list) (free tier available)
+
+## Usage
+
+1. **Login** — click **Z.AI → Login**, paste your API key (the [key management page](https://z.ai/manage-apikey/apikey-list) opens automatically)
+2. **Chat** — click **💬 Chat** to open the side panel; ask the AI to work with your spreadsheet
+3. **Model** — click **Model** to pick from 12 available models (free ⚡ to premium 💎)
+4. **Language** — click **Language** to switch UI language (PL, EN, DE, FR, ES, UK, ZH, JA)
+5. **Add Tokens** — opens the [billing page](https://z.ai/manage-apikey/billing) to top up your balance
+
+### Example prompts
+
+- *"Read data from A1:D10 and summarize it"*
+- *"Add a SUM formula in E1"*
+- *"Format headers as bold with green background"*
+- *"Create a pie chart from A1:B5"*
+- *"Sort by column C descending"*
+
+## Features
+
+- **Side-panel AI chat** — Custom Task Pane docked to the right
+- **WPF interface** — chat bubbles, Excel-green theme, typing animation, emoji support
+- **15 Excel tools** — the AI can read/write cells, format ranges, create charts, sort data, and more
+- **12 models** — full catalog with pricing (free flash models included)
+- **8 languages** — auto-detected from Windows locale
+- **Loop detection** — prevents the AI from repeating the same operations endlessly
+- **Dedicated Ribbon tab** — login, model select, language, balance link, logs, about
+
+### AI Tools
 
 | Tool | Description |
 |------|-------------|
 | `read_cell` / `write_cell` | Read/write a single cell |
 | `read_range` / `write_range` | Read/write a 2D range |
-| `get_sheet_info` | Sheet dimensions and headers |
-| `get_workbook_info` | Workbook sheets and path |
-| `format_range` | Fonts, colors, borders, alignment, merge |
+| `get_sheet_info` | Sheet dimensions, headers, used range |
+| `get_workbook_info` | Workbook sheets, file path |
+| `format_range` | Font, colors, borders, alignment, merge |
 | `insert_formula` | Insert Excel formulas |
-| `sort_range` | Sort data |
-| `add_sheet` | Add sheet |
+| `sort_range` | Sort data by column |
+| `add_sheet` | Add a new worksheet |
 | `delete_rows` / `insert_rows` | Delete/insert rows |
 | `create_chart` | Create charts (column, bar, line, pie, scatter, area) |
-| `delete_chart` | Delete a chart |
-| `list_charts` | List charts on a sheet |
+| `delete_chart` / `list_charts` | Delete or list charts |
 
-## Requirements
-
-- Microsoft Excel 2016+ (Windows, 64-bit recommended)
-- .NET 8.0 Runtime ([download](https://dotnet.microsoft.com/download/dotnet/8.0))
-- API key from [z.ai](https://open.z.ai/) (free registration)
-
-## Build (COM Add-in v2.0)
+## Build from Source
 
 Requires .NET SDK 8.0+:
 
 ```powershell
-cd src\ZaiExcelAddin
+cd src
 dotnet build -c Release
 ```
 
-Output: `src\ZaiExcelAddin\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+Output: `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
 
-## Install (COM Add-in v2.0)
-
-1. Open Excel
-2. **File** → **Options** → **Add-ins**
-3. At bottom: **Manage** → **Excel Add-ins** → **Go**
-4. **Browse** and select `ZaiExcelAddin-AddIn64-packed.xll`
-5. Confirm
-
-The **Z.AI** tab appears on the ribbon.
-
-## Usage
-
-### Login
-Click **Z.AI** → **Login** → paste your z.ai API key.
-
-### Chat with AI
-Click **💬 Chat** on the Z.AI ribbon tab — the right-side pane opens.
-
-Example prompts:
-- "Read data from A1:D10"
-- "Add a SUM formula to E1"
-- "Bold header row with blue background"
-- "Create a pie chart from A1:B5"
-- "Sort by column C descending"
-
-### Change language
-**Z.AI** → **Language** → type code: `pl`, `en`, `de`, `fr`, `es`, `uk`, `zh`, `ja`
-
-## Project structure
+## Project Structure
 
 ```
-z.ai-Unofficial-Excel-Com-Add-in-addon/
-├── src/ZaiExcelAddin/           # .NET COM Add-in (v2.0, Excel-DNA)
-│   ├── ZaiExcelAddin.csproj     # C# project
-│   ├── AddIn.cs                 # Entry point (IExcelAddIn)
-│   ├── RibbonController.cs      # Ribbon + Custom Task Pane
+dodatek-z-ai-opus/
+├── src/                            # .NET 8 COM Add-in (ExcelDNA)
+│   ├── ZaiExcelAddin.csproj        # C# project file
+│   ├── AddIn.cs                    # Entry point (IExcelAddIn)
+│   ├── RibbonController.cs         # Ribbon UI + Custom Task Pane
 │   ├── Models/
-│   ├── Services/                # Auth, Conversation, Excel skills, I18n, API
-│   └── UI/                      # WPF chat panel + host
-├── legacy/                      # VBA (v1.0)
-│   ├── *.bas, *.frm
-│   └── build.vbs                # Builds .xlam
-├── show-reel.gif
-└── README*.md                   # EN + PL docs
+│   │   └── ChatMessage.cs          # Chat message model
+│   ├── Services/
+│   │   ├── AuthService.cs          # API key storage (Windows Registry)
+│   │   ├── ConversationService.cs  # Tool-calling loop + loop detection
+│   │   ├── DebugLogger.cs          # File logging
+│   │   ├── ExcelSkillService.cs    # 15 Excel tools
+│   │   ├── I18nService.cs          # 8-language i18n
+│   │   └── ZaiApiService.cs        # Z.AI HTTP client + model catalog
+│   └── UI/
+│       ├── ChatPanel.xaml/.cs      # WPF chat panel
+│       ├── ChatPaneHost.cs         # WinForms host for CTP (COM-visible)
+│       ├── WpfLoginDialog.xaml/.cs # WPF login dialog
+│       └── WpfSelectDialog.xaml/.cs# WPF select dialog
+├── legacy/                         # v1.0 VBA add-in (deprecated)
+├── show-reel.gif                   # Demo animation
+├── dodatek-z-ai-opus.sln          # Solution file
+└── README.md
 ```
 
-## v2.0 architecture (COM Add-in)
+## Architecture
 
 ```
-┌──────────────┐    HTTP/JSON     ┌─────────────────┐
-│   z.ai API   │◄───────────────►│  ZaiApiService   │
-│   (GLM-4+)   │                 └────────┬────────┘
+┌──────────────┐    HTTP/JSON     ┌──────────────────┐
+│   Z.AI API   │◄───────────────►│   ZaiApiService   │
+│  (GLM models)│                 └────────┬─────────┘
 └──────────────┘                          │
-                                ┌─────────▼────────┐
-                                │ ConversationSvc   │ ← tool-calling loop
-                                │ (max 15 rounds,   │   + loop detection
-                                │  dedup detection)  │
-                                └─────────┬────────┘
+                                ┌─────────▼─────────┐
+                                │ ConversationService │  tool-calling loop
+                                │  (max 15 rounds,    │  + dedup detection
+                                │   loop detection)   │
+                                └─────────┬─────────┘
                                           │
                      ┌────────────────────┼────────────────────┐
                      │                    │                    │
-              ┌──────▼──────┐    ┌───────▼──────┐    ┌───────▼──────┐
-              │  ChatPanel   │    │ ExcelSkillSvc │    │  I18nService  │
-              │  (WPF CTP)   │    │ (15 tools)    │    │  (8 langs)    │
-              └─────────────┘    └──────────────┘    └──────────────┘
+              ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
+              │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
+              │  (WPF CTP)   │    │  (15 tools)    │    │  (8 langs)    │
+              └─────────────┘    └───────────────┘    └──────────────┘
 ```
 
-## Legacy version (VBA)
+## Legacy Version (v1.0 — VBA)
 
-Legacy VBA (.xlam) remains available — run `cscript build.vbs` in `legacy` to build.
+The original VBA add-in (`.xlam`) is preserved in the [`legacy/`](legacy/) directory. It is no longer maintained and has been fully superseded by the .NET version above. To build it: `cscript legacy\build.vbs`.
 
 ## License
 
-Open-source project. Uses the z.ai API — you need an account and API key.
+Open-source community project. Uses the [Z.AI API](https://z.ai) — an account and API key are required.
