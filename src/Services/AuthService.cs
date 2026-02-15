@@ -1,6 +1,7 @@
-using System.Drawing;
 using System.Net.Http;
 using System.Windows.Forms;
+using System.Windows.Interop;
+using ExcelDna.Integration;
 using Microsoft.Win32;
 
 namespace ZaiExcelAddin.Services;
@@ -98,6 +99,7 @@ public class AuthService
 
         var dlg = new UI.WpfLoginDialog();
         dlg.SetCurrentKey(current);
+        new WindowInteropHelper(dlg).Owner = ExcelDnaUtil.WindowHandle;
 
         if (dlg.ShowDialog() != true) return;
 

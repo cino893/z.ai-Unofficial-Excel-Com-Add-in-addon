@@ -1,4 +1,6 @@
 using System.Runtime.InteropServices;
+using System.Windows.Interop;
+using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 
 namespace ZaiExcelAddin;
@@ -151,6 +153,7 @@ public class RibbonController : ExcelRibbon
             AddIn.I18n.T("model.title"),
             AddIn.I18n.T("model.prompt"),
             items, current, keyMap);
+        new WindowInteropHelper(dlg).Owner = ExcelDnaUtil.WindowHandle;
 
         if (dlg.ShowDialog() == true && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
@@ -170,6 +173,7 @@ public class RibbonController : ExcelRibbon
             AddIn.I18n.T("lang.title"),
             AddIn.I18n.T("lang.select_prompt"),
             items, current, keyMap);
+        new WindowInteropHelper(dlg).Owner = ExcelDnaUtil.WindowHandle;
 
         if (dlg.ShowDialog() == true && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
