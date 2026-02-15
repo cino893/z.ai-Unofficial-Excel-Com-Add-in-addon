@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ExcelDna.Integration;
@@ -290,8 +291,29 @@ public partial class ExcelSkillService
         if (errors.Count > 0)
         {
             result["errors"] = errors;
-            result["hint"] = "PivotTable enumeration failed on some sheets (COM type library issue). " +
-                "Creating new pivot tables may still work. Do NOT retry list_pivot_tables — it will fail the same way.";
+
+            // Try PivotCaches to provide source data info even when enumeration fails
+            try
+            {
+                var cacheInfo = new JsonArray();
+                foreach (dynamic cache in wb.PivotCaches())
+                {
+                    try
+                    {
+                        string sd = cache.SourceData?.ToString() ?? "";
+                        if (!string.IsNullOrEmpty(sd))
+                            cacheInfo.Add(sd);
+                    }
+                    catch { }
+                }
+                if (cacheInfo.Count > 0)
+                    result["pivot_cache_sources"] = cacheInfo;
+            }
+            catch { }
+
+            result["hint"] = "PivotTable enumeration failed (COM type library issue, common with .xlsb files). " +
+                "Do NOT retry list_pivot_tables. To move a pivot, use read_range to find its location, " +
+                "then move_table with source_range parameter, or use create_pivot_table + clear_range.";
         }
         return result.ToJsonString();
     }
@@ -307,13 +329,13 @@ public partial class ExcelSkillService
         string destCell = Str(args["dest_cell"], "A1");
         dynamic sourceSheet = GetTargetSheet(args);
 
-        // 1. Try to find a PivotTable by name
         dynamic? foundPivot = null;
         dynamic? pivotSheet = null;
+        bool comTypeLibError = false;
 
+        // ---- TIER 1: PivotTables() enumeration ----
         if (!string.IsNullOrEmpty(sourceName))
         {
-            // First try: enumerate PivotTables per sheet
             foreach (dynamic sheet in wb.Worksheets)
             {
                 try
@@ -321,39 +343,48 @@ public partial class ExcelSkillService
                     foreach (dynamic pt in sheet.PivotTables())
                     {
                         if ((string)pt.Name == sourceName)
-                        {
-                            foundPivot = pt;
-                            pivotSheet = sheet;
-                            break;
-                        }
+                        { foundPivot = pt; pivotSheet = sheet; break; }
                     }
                     if (foundPivot != null) break;
                 }
-                catch { /* enumeration may fail (TYPE_E_INVDATAREAD) */ }
-            }
-
-            // Fallback: direct name lookup — may work when enumeration fails
-            if (foundPivot == null)
-            {
-                foreach (dynamic sheet in wb.Worksheets)
-                {
-                    try
-                    {
-                        dynamic pt = sheet.PivotTables(sourceName);
-                        if (pt != null)
-                        {
-                            foundPivot = pt;
-                            pivotSheet = sheet;
-                            break;
-                        }
-                    }
-                    catch { /* not on this sheet */ }
-                }
+                catch (COMException ex) when (ex.HResult == unchecked((int)0x80028018))
+                { comTypeLibError = true; }
+                catch { }
             }
         }
 
-        // 2. Also check if source_range overlaps a pivot table
+        // ---- TIER 2: Direct name lookup ----
+        if (foundPivot == null && !string.IsNullOrEmpty(sourceName))
+        {
+            foreach (dynamic sheet in wb.Worksheets)
+            {
+                try
+                {
+                    dynamic pt = sheet.PivotTables(sourceName);
+                    if (pt != null) { foundPivot = pt; pivotSheet = sheet; break; }
+                }
+                catch (COMException ex) when (ex.HResult == unchecked((int)0x80028018))
+                { comTypeLibError = true; }
+                catch { }
+            }
+        }
+
+        // ---- TIER 3: Range.PivotTable — bypasses PivotTables() collection ----
         if (foundPivot == null && !string.IsNullOrEmpty(sourceRange))
+        {
+            try
+            {
+                dynamic firstCell = sourceSheet.Range[sourceRange].Cells[1, 1];
+                foundPivot = firstCell.PivotTable;
+                pivotSheet = sourceSheet;
+            }
+            catch (COMException ex) when (ex.HResult == unchecked((int)0x80028018))
+            { comTypeLibError = true; }
+            catch { /* cell is not in a pivot table — expected */ }
+        }
+
+        // ---- TIER 3b: Intersection check (normal workbooks only) ----
+        if (foundPivot == null && !string.IsNullOrEmpty(sourceRange) && !comTypeLibError)
         {
             try
             {
@@ -363,17 +394,15 @@ public partial class ExcelSkillService
                     dynamic ptRange = pt.TableRange2;
                     dynamic overlap = app.Intersect(srcRange, ptRange);
                     if (overlap != null)
-                    {
-                        foundPivot = pt;
-                        pivotSheet = sourceSheet;
-                        break;
-                    }
+                    { foundPivot = pt; pivotSheet = sourceSheet; break; }
                 }
             }
-            catch { /* no pivot tables on sheet */ }
+            catch { }
         }
 
-        // Determine destination sheet
+        AddIn.Logger.Debug($"move_table: name={sourceName}, range={sourceRange}, found={foundPivot != null}, comErr={comTypeLibError}");
+
+        // ---- Determine destination sheet ----
         dynamic destSheet;
         if (string.IsNullOrEmpty(destSheetName))
         {
@@ -381,10 +410,7 @@ public partial class ExcelSkillService
         }
         else
         {
-            try
-            {
-                destSheet = wb.Worksheets[destSheetName];
-            }
+            try { destSheet = wb.Worksheets[destSheetName]; }
             catch
             {
                 destSheet = wb.Worksheets.Add();
@@ -392,35 +418,109 @@ public partial class ExcelSkillService
             }
         }
 
-        dynamic destRange = destSheet.Range[destCell];
+        dynamic destRng = destSheet.Range[destCell];
 
-        // 3a. Move pivot table using Location property (string form for cross-sheet)
+        // ---- 4a. Move pivot using Location property ----
         if (foundPivot != null)
         {
             string fromSheet = (string)(pivotSheet?.Name ?? "?");
             string ptName = (string)foundPivot.Name;
-
-            // Location requires qualified range string: 'Sheet Name'!A1
             string destSheetActual = (string)destSheet.Name;
             string qualifiedDest = $"'{destSheetActual}'!{destCell}";
-            foundPivot.Location = qualifiedDest;
 
-            return new JsonObject
+            try
             {
-                ["success"] = true,
-                ["moved"] = "pivot_table",
-                ["name"] = ptName,
-                ["from_sheet"] = fromSheet,
-                ["to_sheet"] = destSheetActual,
-                ["dest_cell"] = destCell
-            }.ToJsonString();
+                foundPivot.Location = qualifiedDest;
+                return new JsonObject
+                {
+                    ["success"] = true,
+                    ["moved"] = "pivot_table",
+                    ["name"] = ptName,
+                    ["from_sheet"] = fromSheet,
+                    ["to_sheet"] = destSheetActual,
+                    ["dest_cell"] = destCell
+                }.ToJsonString();
+            }
+            catch (Exception ex)
+            {
+                AddIn.Logger.Debug($"move_table Location failed: 0x{ex.HResult:X} {ex.Message}");
+                // Fall through to PivotCaches recreation
+            }
         }
 
-        // 3b. Move regular data range using Copy + clear source
-        if (!string.IsNullOrEmpty(sourceRange))
+        // ---- 4b. PivotCaches recreation (when pivot exists but can't be moved) ----
+        if (foundPivot != null || comTypeLibError)
+        {
+            try
+            {
+                foreach (dynamic cache in wb.PivotCaches())
+                {
+                    try
+                    {
+                        string sd = cache.SourceData?.ToString() ?? "";
+                        if (string.IsNullOrEmpty(sd)) continue;
+
+                        string newName = (!string.IsNullOrEmpty(sourceName) ? sourceName : "PivotTable") + "_moved";
+                        dynamic newPt = cache.CreatePivotTable(
+                            TableDestination: destRng,
+                            TableName: newName);
+
+                        string clearNote = "";
+                        if (!string.IsNullOrEmpty(sourceRange))
+                        {
+                            try { sourceSheet.Range[sourceRange].Clear(); clearNote = " Old range cleared."; }
+                            catch { clearNote = " Could not clear old range — clear it manually with clear_range."; }
+                        }
+
+                        AddIn.Logger.Debug($"move_table: recreated pivot from cache, source={sd}");
+
+                        return new JsonObject
+                        {
+                            ["success"] = true,
+                            ["moved"] = "pivot_recreated",
+                            ["new_name"] = newName,
+                            ["source_data"] = sd,
+                            ["to_sheet"] = (string)destSheet.Name,
+                            ["dest_cell"] = destCell,
+                            ["warning"] = $"Pivot recreated from cache — field layout (row_fields, value_fields, column_fields) needs reconfiguration via create_pivot_table or manual setup.{clearNote}"
+                        }.ToJsonString();
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                AddIn.Logger.Debug($"move_table PivotCaches failed: 0x{ex.HResult:X}");
+            }
+
+            // PivotCaches also failed — return actionable error
+            string cacheSourceHint = "";
+            try
+            {
+                foreach (dynamic c in wb.PivotCaches())
+                {
+                    try { cacheSourceHint = c.SourceData?.ToString() ?? ""; break; } catch { }
+                }
+            }
+            catch { }
+
+            return JsonSerializer.Serialize(new
+            {
+                error = "Cannot move pivot table — COM type library error on this workbook (.xlsb issue).",
+                alternative_steps = new[]
+                {
+                    $"1. create_pivot_table on dest_sheet='{destSheetName ?? "new sheet"}' with same source data{(string.IsNullOrEmpty(cacheSourceHint) ? "" : $" (source: {cacheSourceHint})")} and field configuration",
+                    $"2. clear_range on sheet='{sourceSheet.Name}' to remove old pivot"
+                },
+                hint = "Do NOT retry move_table — use create_pivot_table + clear_range instead."
+            });
+        }
+
+        // ---- 4c. Move regular data range ----
+        if (!string.IsNullOrEmpty(sourceRange) && !comTypeLibError)
         {
             dynamic srcRange = sourceSheet.Range[sourceRange];
-            srcRange.Copy(destRange);
+            srcRange.Copy(destRng);
             srcRange.Clear();
 
             return new JsonObject
@@ -434,13 +534,24 @@ public partial class ExcelSkillService
             }.ToJsonString();
         }
 
+        // ---- 4d. source_range on problematic workbook — don't blindly copy, might be pivot ----
+        if (!string.IsNullOrEmpty(sourceRange) && comTypeLibError)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                error = "Cannot determine if source_range contains a pivot table (COM type library error).",
+                hint = "To move data: use copy_range + clear_range. To move a pivot: use create_pivot_table on the destination sheet + clear_range on the source."
+            });
+        }
+
+        // ---- Final error ----
         if (!string.IsNullOrEmpty(sourceName))
             return JsonSerializer.Serialize(new
             {
-                error = $"Pivot table '{sourceName}' not found. It may not exist, or PivotTable enumeration is unavailable in this workbook.",
-                hint = "Try using source_range instead, or use copy_range to move the data manually."
+                error = $"Pivot table '{sourceName}' not found.",
+                hint = "Try using source_range parameter pointing to the pivot's cell range instead."
             });
 
-        return JsonSerializer.Serialize(new { error = "Provide either 'name' (pivot table name) or 'source_range' to move." });
+        return JsonSerializer.Serialize(new { error = "Provide 'name' (pivot table name) or 'source_range' to move." });
     }
 }

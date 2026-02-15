@@ -242,6 +242,10 @@ public partial class ExcelSkillService
         for (int i = 1; i <= count; i++)
             sheets.Add((string)wb.Worksheets[i].Name);
 
+        // PivotCaches count — helps detect pivots even when PivotTables() fails on .xlsb
+        int pivotCacheCount = -1;
+        try { pivotCacheCount = wb.PivotCaches().Count; } catch { }
+
         var result = new JsonObject
         {
             ["name"] = (string)wb.Name,
@@ -249,6 +253,10 @@ public partial class ExcelSkillService
             ["sheets"] = sheets,
             ["active_sheet"] = (string)app.ActiveSheet.Name
         };
+
+        if (pivotCacheCount >= 0)
+            result["pivot_cache_count"] = pivotCacheCount;
+
         return result.ToJsonString();
     }
 

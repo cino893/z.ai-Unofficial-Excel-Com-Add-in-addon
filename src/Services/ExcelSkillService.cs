@@ -207,11 +207,11 @@ public partial class ExcelSkillService
                 new JsonArray { "source_range", "row_fields", "value_fields" }),
 
             MakeTool("move_table",
-                "Move a data range or PivotTable to another sheet/location. Automatically detects if the range contains a PivotTable and moves it properly. Use when a pivot table blocks delete_rows/insert_rows.",
+                "Move a data range or PivotTable to another sheet. For pivots: tries name lookup, then source_range cell access, then PivotCaches recreation. On .xlsb files prefer source_range over name. Use when a pivot table blocks delete_rows/insert_rows.",
                 new JsonObject
                 {
-                    ["name"] = PropString("PivotTable name to move (optional — if omitted, uses source_range)"),
-                    ["source_range"] = PropString("Source data range to move e.g. A1:F50 (optional if name is given)"),
+                    ["name"] = PropString("PivotTable name to move (optional — on .xlsb files this may fail, prefer source_range)"),
+                    ["source_range"] = PropString("Source range e.g. H1:M30 — works for both data and pivot tables (recommended for .xlsb)"),
                     ["dest_sheet"] = PropString("Destination sheet name (optional, creates new sheet if omitted)"),
                     ["dest_cell"] = PropString("Destination cell e.g. A1 (default: A1)"),
                     ["sheet"] = PropString("Source sheet name (optional, defaults to active)")
