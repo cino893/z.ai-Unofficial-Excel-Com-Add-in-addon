@@ -79,6 +79,7 @@ modulesImported = 0
 ' Import modules
 ImportModule "modJSON.bas"
 ImportModule "modDebug.bas"
+ImportModule "modI18n.bas"
 ImportModule "modAuth.bas"
 ImportModule "modZaiAPI.bas"
 ImportModule "modExcelSkills.bas"
@@ -178,9 +179,9 @@ Sub CreateChatForm(proj)
     
     ' Set form properties via Designer
     With frm.Designer
-        .Caption = "Z.AI - Asystent Excel"
-        .Width = 520
-        .Height = 620
+        .Caption = "Z.AI - Excel Assistant"
+        .Width = 360
+        .Height = 700
     End With
     If Err.Number <> 0 Then Err.Clear
     
@@ -283,19 +284,33 @@ Sub CreateChatForm(proj)
     code = code & "Private m_conversationStarted As Boolean" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "Private Sub UserForm_Initialize()" & vbCrLf
-    code = code & "    Me.Width = 520" & vbCrLf
-    code = code & "    Me.Height = 620" & vbCrLf
-    code = code & "    Me.Caption = ""Z.AI - Asystent Excel""" & vbCrLf
+    code = code & "    modI18n.InitI18n" & vbCrLf
+    code = code & "    Me.Caption = modI18n.T(""chat.title"")" & vbCrLf
+    code = code & "    PositionAsSidePanel" & vbCrLf
     code = code & "    m_conversationStarted = False" & vbCrLf
-    code = code & "    AppendChat ""Z.AI"", ""Witaj! Jestem asystentem AI zintegrowanym z Excel."" & vbCrLf & _" & vbCrLf
-    code = code & "        ""Moge pomoc Ci edytowac arkusz - po prostu opisz co chcesz zrobic."" & vbCrLf & vbCrLf & _" & vbCrLf
-    code = code & "        ""Przyklady polecen:"" & vbCrLf & _" & vbCrLf
-    code = code & "        ""  - Przeczytaj dane z kolumny A"" & vbCrLf & _" & vbCrLf
-    code = code & "        ""  - Dodaj formule SUM do komorki B10"" & vbCrLf & _" & vbCrLf
-    code = code & "        ""  - Sformatuj naglowki na pogrubione"" & vbCrLf & _" & vbCrLf
-    code = code & "        ""  - Posortuj dane wedlug kolumny C malejaco"" & vbCrLf & _" & vbCrLf
-    code = code & "        ""  - Stworz wykres kolumnowy z danych A1:B5""" & vbCrLf
+    code = code & "    btnSend.Caption = modI18n.T(""chat.send"")" & vbCrLf
+    code = code & "    btnNew.Caption = modI18n.T(""chat.new"")" & vbCrLf
+    code = code & "    btnClear.Caption = modI18n.T(""chat.clear"")" & vbCrLf
+    code = code & "    lblStatus.Caption = modI18n.T(""chat.ready"")" & vbCrLf
+    code = code & "    AppendChat ""Z.AI"", modI18n.T(""chat.welcome"")" & vbCrLf
     code = code & "    modDebug.LogInfo ""Chat form opened""" & vbCrLf
+    code = code & "End Sub" & vbCrLf
+    code = code & "" & vbCrLf
+    code = code & "Private Sub PositionAsSidePanel()" & vbCrLf
+    code = code & "    On Error Resume Next" & vbCrLf
+    code = code & "    Dim excelLeft As Single, excelTop As Single" & vbCrLf
+    code = code & "    Dim excelWidth As Single, excelHeight As Single" & vbCrLf
+    code = code & "    excelLeft = Application.Left" & vbCrLf
+    code = code & "    excelTop = Application.Top" & vbCrLf
+    code = code & "    excelWidth = Application.Width" & vbCrLf
+    code = code & "    excelHeight = Application.Height" & vbCrLf
+    code = code & "    Dim panelWidth As Single: panelWidth = 360" & vbCrLf
+    code = code & "    Me.StartUpPosition = 0" & vbCrLf
+    code = code & "    Me.Width = panelWidth" & vbCrLf
+    code = code & "    Me.Height = excelHeight - 40" & vbCrLf
+    code = code & "    Me.Left = excelLeft + excelWidth - panelWidth - 10" & vbCrLf
+    code = code & "    Me.Top = excelTop + 30" & vbCrLf
+    code = code & "    On Error GoTo 0" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "Private Sub UserForm_Activate()" & vbCrLf
@@ -320,7 +335,7 @@ Sub CreateChatForm(proj)
     code = code & "    Dim w As Single, h As Single" & vbCrLf
     code = code & "    w = Me.InsideWidth" & vbCrLf
     code = code & "    h = Me.InsideHeight" & vbCrLf
-    code = code & "    If w < 300 Or h < 200 Then Exit Sub" & vbCrLf
+    code = code & "    If w < 200 Or h < 200 Then Exit Sub" & vbCrLf
     code = code & "    Dim inputH As Single: inputH = 50" & vbCrLf
     code = code & "    Dim statusH As Single: statusH = 18" & vbCrLf
     code = code & "    Dim btnRowH As Single: btnRowH = 25" & vbCrLf
@@ -356,8 +371,8 @@ Sub CreateChatForm(proj)
     code = code & "    modConversation.ResetConversation" & vbCrLf
     code = code & "    txtChat.Text = """"" & vbCrLf
     code = code & "    m_conversationStarted = False" & vbCrLf
-    code = code & "    AppendChat ""Z.AI"", ""Nowa rozmowa rozpoczeta. Jak moge pomoc?""" & vbCrLf
-    code = code & "    lblStatus.Caption = ""Gotowy""" & vbCrLf
+    code = code & "    AppendChat ""Z.AI"", modI18n.T(""chat.new_started"")" & vbCrLf
+    code = code & "    lblStatus.Caption = modI18n.T(""chat.ready"")" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "Private Sub btnClear_Click()" & vbCrLf
@@ -386,7 +401,7 @@ Sub CreateChatForm(proj)
     code = code & "" & vbCrLf
     code = code & "    txtInput.Enabled = False" & vbCrLf
     code = code & "    btnSend.Enabled = False" & vbCrLf
-    code = code & "    lblStatus.Caption = ""Przetwarzanie...""" & vbCrLf
+    code = code & "    lblStatus.Caption = modI18n.T(""chat.processing"")" & vbCrLf
     code = code & "    DoEvents" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "    Dim response As String" & vbCrLf
@@ -396,7 +411,7 @@ Sub CreateChatForm(proj)
     code = code & "" & vbCrLf
     code = code & "    txtInput.Enabled = True" & vbCrLf
     code = code & "    btnSend.Enabled = True" & vbCrLf
-    code = code & "    lblStatus.Caption = ""Gotowy ("" & modConversation.GetMessageCount() & "" wiadomosci)""" & vbCrLf
+    code = code & "    lblStatus.Caption = modI18n.TFormat(""chat.ready_count"", modConversation.GetMessageCount())" & vbCrLf
     code = code & "    txtInput.SetFocus" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
@@ -478,6 +493,7 @@ Sub AddThisWorkbookCode(proj)
     code = code & "Private Sub Workbook_Open()" & vbCrLf
     code = code & "    On Error Resume Next" & vbCrLf
     code = code & "    modDebug.InitDebug" & vbCrLf
+    code = code & "    modI18n.InitI18n" & vbCrLf
     code = code & "    modDebug.LogInfo ""Z.AI Add-in loaded""" & vbCrLf
     code = code & "    modRibbon.CreateZaiMenu" & vbCrLf
     code = code & "    On Error GoTo 0" & vbCrLf
@@ -486,6 +502,7 @@ Sub AddThisWorkbookCode(proj)
     code = code & "Private Sub Workbook_AddinInstall()" & vbCrLf
     code = code & "    On Error Resume Next" & vbCrLf
     code = code & "    modDebug.InitDebug" & vbCrLf
+    code = code & "    modI18n.InitI18n" & vbCrLf
     code = code & "    modDebug.LogInfo ""Z.AI Add-in installed""" & vbCrLf
     code = code & "    modRibbon.CreateZaiMenu" & vbCrLf
     code = code & "    On Error GoTo 0" & vbCrLf

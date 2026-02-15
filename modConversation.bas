@@ -6,6 +6,7 @@ Attribute VB_Name = "modConversation"
 Option Explicit
 
 Private Const MAX_TOOL_ROUNDS As Long = 15
+Private Const MAX_SAME_TOOL_REPEATS As Long = 2
 Private m_messages As Collection
 Private m_isProcessing As Boolean
 
@@ -26,21 +27,7 @@ End Sub
 
 ' --- Get system prompt ---
 Public Function GetSystemPrompt() As String
-    GetSystemPrompt = _
-        "Jestes inteligentnym asystentem AI zintegrowanym z Microsoft Excel. " & _
-        "Pomagasz uzytkownikowi edytowac i analizowac dane w arkuszu kalkulacyjnym. " & _
-        "Masz dostep do narzedzi (tools) ktore pozwalaja Ci czytac i zapisywac komorki, " & _
-        "formatowac dane, wstawiac formuly, sortowac, tworzyc wykresy i wiele wiecej." & vbLf & vbLf & _
-        "ZASADY:" & vbLf & _
-        "1. Zawsze NAJPIERW uzyj get_sheet_info lub get_workbook_info aby poznac kontekst danych." & vbLf & _
-        "2. Przed modyfikacja danych, przeczytaj odpowiedni zakres aby zrozumiec strukture." & vbLf & _
-        "3. Po wykonaniu zmian, potwierdzaj co zrobiles." & vbLf & _
-        "4. Uzywaj polskich nazw w komunikatach do uzytkownika." & vbLf & _
-        "5. Formuly Excel pisz w skladni angielskiej (SUM, AVERAGE, IF, VLOOKUP itp.)." & vbLf & _
-        "6. Kolory podawaj jako RGB long: Red=255, Green=65280, Blue=16711680, Yellow=65535, " & _
-        "LightGray=12632256, White=16777215, Orange=33023." & vbLf & _
-        "7. Jezeli uzytkownik nie sprecyzuje arkusza, uzyj aktywnego arkusza." & vbLf & _
-        "8. Badz zwiezly ale informatywny w odpowiedziach."
+    GetSystemPrompt = T("system.prompt")
 End Function
 
 ' --- Build messages JSON ---
@@ -97,16 +84,20 @@ Public Function SendUserMessage(ByVal userMessage As String) As String
     
     m_isProcessing = True
     
-    ' Tool-calling loop
+    ' Tool-calling loop with repetition detection
     Dim round As Long
     Dim finalResponse As String
     finalResponse = ""
+    Dim lastToolSig As String
+    lastToolSig = ""
+    Dim sameToolCount As Long
+    sameToolCount = 0
     
     For round = 1 To MAX_TOOL_ROUNDS
         LogInfo "=== Conversation round " & round & " ==="
         
         ' Send to API
-        Application.StatusBar = "Z.AI: Przetwarzanie... (runda " & round & ")"
+        Application.StatusBar = TFormat("conv.status_round", round)
         DoEvents
         
         Dim messagesJson As String
@@ -119,7 +110,7 @@ Public Function SendUserMessage(ByVal userMessage As String) As String
         Set response = SendChatCompletion(messagesJson, toolsJson)
         
         If response Is Nothing Or Not response("success") Then
-            finalResponse = "[Blad API]: " & DictGet(response, "error", "Brak odpowiedzi z serwera")
+            finalResponse = T("conv.api_error") & DictGet(response, "error", T("conv.no_response"))
             LogError "API call failed in round " & round
             GoTo Cleanup
         End If
@@ -133,7 +124,7 @@ Public Function SendUserMessage(ByVal userMessage As String) As String
         Set assistantMsg = GetAssistantMessage(response)
         
         If assistantMsg Is Nothing Then
-            finalResponse = "[Blad]: Brak odpowiedzi asystenta"
+            finalResponse = T("conv.error") & T("conv.no_assistant")
             GoTo Cleanup
         End If
         
@@ -164,7 +155,22 @@ Public Function SendUserMessage(ByVal userMessage As String) As String
             Dim toolCalls As Collection
             Set toolCalls = GetToolCalls(response)
             
-            Application.StatusBar = "Z.AI: Wykonywanie " & toolCalls.Count & " operacji na Excelu..."
+            ' Detect repetitive tool calls
+            Dim currentSig As String
+            currentSig = BuildToolCallSignature(toolCalls)
+            If currentSig = lastToolSig And currentSig <> "" Then
+                sameToolCount = sameToolCount + 1
+                If sameToolCount >= MAX_SAME_TOOL_REPEATS Then
+                    LogWarn "Repetitive tool call detected (" & sameToolCount & "x): " & currentSig
+                    finalResponse = T("conv.loop_detected")
+                    GoTo Cleanup
+                End If
+            Else
+                sameToolCount = 0
+                lastToolSig = currentSig
+            End If
+            
+            Application.StatusBar = TFormat("conv.status_exec", toolCalls.Count)
             DoEvents
             
             Dim tc As Long
@@ -216,7 +222,7 @@ Public Function SendUserMessage(ByVal userMessage As String) As String
     Next round
     
     ' Max rounds reached
-    finalResponse = "[Uwaga]: Osiagnieto maksymalna liczbe rund (" & MAX_TOOL_ROUNDS & "). Ostatnia odpowiedz moze byc niekompletna."
+    finalResponse = TFormat("conv.max_rounds", MAX_TOOL_ROUNDS)
     LogWarn "Max tool-calling rounds reached"
     
 Cleanup:
@@ -230,6 +236,26 @@ ErrHandler:
     Application.StatusBar = False
     LogErrorDetails "SendUserMessage", Err.Number, Err.Description
     SendUserMessage = "[Blad]: " & Err.Description
+End Function
+
+' --- Build signature string for tool calls to detect repetition ---
+Private Function BuildToolCallSignature(ByVal toolCalls As Collection) As String
+    On Error GoTo ErrHandler
+    Dim sig As String
+    sig = ""
+    Dim tc As Long
+    For tc = 1 To toolCalls.Count
+        Dim toolCall As Object
+        Set toolCall = toolCalls(tc)
+        Dim funcObj As Object
+        Set funcObj = toolCall("function")
+        If sig <> "" Then sig = sig & "|"
+        sig = sig & CStr(funcObj("name")) & ":" & CStr(funcObj("arguments"))
+    Next tc
+    BuildToolCallSignature = sig
+    Exit Function
+ErrHandler:
+    BuildToolCallSignature = ""
 End Function
 
 ' --- Serialize tool_calls collection back to JSON ---

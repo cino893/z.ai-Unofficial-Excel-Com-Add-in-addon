@@ -123,19 +123,17 @@ Public Sub ShowLogin()
     currentKey = LoadApiKey()
     
     Dim prompt As String
-    prompt = "Podaj klucz API z.ai:" & vbCrLf & vbCrLf & _
-             "Klucz mozesz uzyskac na: https://open.z.ai/" & vbCrLf & _
-             "(Sekcja: API Keys)"
+    prompt = T("auth.prompt")
     
     If currentKey <> "" Then
-        prompt = prompt & vbCrLf & vbCrLf & "Aktualny klucz: " & Left(currentKey, 8) & "..." & Right(currentKey, 4)
+        prompt = prompt & vbCrLf & vbCrLf & T("auth.current_key") & Left(currentKey, 8) & "..." & Right(currentKey, 4)
     End If
     
-    apiKey = InputBox(prompt, "Z.AI - Logowanie")
+    apiKey = InputBox(prompt, T("auth.login_title"))
     
     If apiKey = "" Then
         If currentKey = "" Then
-            MsgBox "Logowanie anulowane. Musisz podac klucz API aby korzystac z Z.AI.", vbExclamation, "Z.AI"
+            MsgBox T("auth.cancelled"), vbExclamation, "Z.AI"
         End If
         Exit Sub
     End If
@@ -144,18 +142,17 @@ Public Sub ShowLogin()
     apiKey = Trim(apiKey)
     
     ' Validate
-    Application.StatusBar = "Z.AI: Weryfikacja klucza API..."
+    Application.StatusBar = T("auth.validating")
     Dim isValid As Boolean
     isValid = ValidateApiKey(apiKey)
     Application.StatusBar = False
     
     If isValid Then
         SaveApiKey apiKey
-        MsgBox "Zalogowano pomyslnie!" & vbCrLf & "Klucz API zostal zapisany.", vbInformation, "Z.AI"
+        MsgBox T("auth.success"), vbInformation, "Z.AI"
     Else
         Dim resp As VbMsgBoxResult
-        resp = MsgBox("Nie udalo sie zweryfikowac klucza API." & vbCrLf & _
-                      "Czy chcesz go mimo to zapisac?", vbQuestion + vbYesNo, "Z.AI")
+        resp = MsgBox(T("auth.failed"), vbQuestion + vbYesNo, "Z.AI")
         If resp = vbYes Then
             SaveApiKey apiKey
         End If
@@ -165,16 +162,14 @@ End Sub
 ' --- Show logout confirmation ---
 Public Sub ShowLogout()
     If Not IsLoggedIn() Then
-        MsgBox "Nie jestes zalogowany.", vbInformation, "Z.AI"
+        MsgBox T("auth.not_logged"), vbInformation, "Z.AI"
         Exit Sub
     End If
     
     Dim resp As VbMsgBoxResult
-    resp = MsgBox("Czy na pewno chcesz sie wylogowac?" & vbCrLf & _
-                  "Klucz API zostanie usuniety.", vbQuestion + vbYesNo, "Z.AI"
-    )
+    resp = MsgBox(T("auth.confirm_logout"), vbQuestion + vbYesNo, "Z.AI")
     If resp = vbYes Then
         ClearApiKey
-        MsgBox "Wylogowano.", vbInformation, "Z.AI"
+        MsgBox T("auth.logged_out"), vbInformation, "Z.AI"
     End If
 End Sub

@@ -21,7 +21,9 @@ Public Function GetToolDefinitions() As String
         ToolDef_AddSheet() & "," & _
         ToolDef_DeleteRows() & "," & _
         ToolDef_InsertRows() & "," & _
-        ToolDef_CreateChart() & _
+        ToolDef_CreateChart() & "," & _
+        ToolDef_DeleteChart() & "," & _
+        ToolDef_ListCharts() & _
     "]"
     GetToolDefinitions = tools
 End Function
@@ -50,6 +52,8 @@ Public Function ExecuteToolCall(ByVal toolName As String, ByVal argsJson As Stri
         Case "delete_rows": result = SkillDeleteRows(args)
         Case "insert_rows": result = SkillInsertRows(args)
         Case "create_chart": result = SkillCreateChart(args)
+        Case "delete_chart": result = SkillDeleteChart(args)
+        Case "list_charts": result = SkillListCharts(args)
         Case Else
             result = "{""error"":""Unknown tool: " & toolName & """}"
             LogWarn "Unknown tool call: " & toolName
@@ -461,6 +465,77 @@ Private Function SkillCreateChart(ByVal args As Object) As String
     SkillCreateChart = "{""success"":true,""chart_name"":""" & EscapeJsonString(chartObj.Name) & """,""type"":""" & DictGet(args, "chart_type", "column") & """}"
 End Function
 
+' --- Delete Chart ---
+Private Function SkillDeleteChart(ByVal args As Object) As String
+    Dim ws As Worksheet
+    Set ws = GetTargetSheet(args)
+    
+    Dim chartName As String
+    chartName = CStr(args("chart_name"))
+    
+    Dim i As Long
+    Dim found As Boolean
+    found = False
+    
+    For i = ws.ChartObjects.Count To 1 Step -1
+        If ws.ChartObjects(i).Name = chartName Then
+            ws.ChartObjects(i).Delete
+            found = True
+            Exit For
+        End If
+    Next i
+    
+    If found Then
+        SkillDeleteChart = "{""success"":true,""deleted"":""" & EscapeJsonString(chartName) & """}"
+    Else
+        SkillDeleteChart = "{""error"":""Chart not found: " & EscapeJsonString(chartName) & """}"
+    End If
+End Function
+
+' --- List Charts ---
+Private Function SkillListCharts(ByVal args As Object) As String
+    Dim ws As Worksheet
+    Set ws = GetTargetSheet(args)
+    
+    Dim result As String
+    result = "{""sheet"":""" & EscapeJsonString(ws.Name) & """,""count"":" & ws.ChartObjects.Count & ",""charts"":["
+    
+    Dim i As Long
+    For i = 1 To ws.ChartObjects.Count
+        If i > 1 Then result = result & ","
+        Dim co As ChartObject
+        Set co = ws.ChartObjects(i)
+        result = result & "{""name"":""" & EscapeJsonString(co.Name) & """"
+        
+        On Error Resume Next
+        Dim chartTypeName As String
+        chartTypeName = "unknown"
+        Select Case co.Chart.chartType
+            Case xlColumnClustered: chartTypeName = "column"
+            Case xlBarClustered: chartTypeName = "bar"
+            Case xlLine: chartTypeName = "line"
+            Case xlPie: chartTypeName = "pie"
+            Case xlXYScatter: chartTypeName = "scatter"
+            Case xlArea: chartTypeName = "area"
+        End Select
+        result = result & ",""type"":""" & chartTypeName & """"
+        
+        Dim srcRange As String
+        srcRange = ""
+        If Not co.Chart.SeriesCollection Is Nothing Then
+            If co.Chart.SeriesCollection.Count > 0 Then
+                srcRange = co.Chart.SeriesCollection(1).Formula
+            End If
+        End If
+        On Error GoTo 0
+        
+        result = result & ",""source"":""" & EscapeJsonString(srcRange) & """}"
+    Next i
+    
+    result = result & "]}"
+    SkillListCharts = result
+End Function
+
 ' ======================== TOOL DEFINITIONS (JSON) ========================
 
 Private Function ToolDef_ReadCell() As String
@@ -603,11 +678,30 @@ End Function
 Private Function ToolDef_CreateChart() As String
     ToolDef_CreateChart = "{""type"":""function"",""function"":{" & _
         """name"":""create_chart""," & _
-        """description"":""Create a chart from data range""," & _
+        """description"":""Create a chart from data range. Use list_charts first to check existing charts, and delete_chart to remove old ones before creating new.""," & _
         """parameters"":{""type"":""object"",""properties"":{" & _
             """data_range"":{""type"":""string"",""description"":""Data range for the chart e.g. A1:B10""}," & _
             """chart_type"":{""type"":""string"",""description"":""Chart type: column, bar, line, pie, scatter, area (default: column)""}," & _
             """title"":{""type"":""string"",""description"":""Chart title (optional)""}," & _
             """sheet"":{""type"":""string"",""description"":""Sheet name (optional)""}" & _
         "},""required"":[""data_range""]}}}"
+End Function
+
+Private Function ToolDef_DeleteChart() As String
+    ToolDef_DeleteChart = "{""type"":""function"",""function"":{" & _
+        """name"":""delete_chart""," & _
+        """description"":""Delete a chart from the worksheet by name. Use list_charts to find chart names.""," & _
+        """parameters"":{""type"":""object"",""properties"":{" & _
+            """chart_name"":{""type"":""string"",""description"":""Name of the chart to delete e.g. Chart 1""}," & _
+            """sheet"":{""type"":""string"",""description"":""Sheet name (optional)""}" & _
+        "},""required"":[""chart_name""]}}}"
+End Function
+
+Private Function ToolDef_ListCharts() As String
+    ToolDef_ListCharts = "{""type"":""function"",""function"":{" & _
+        """name"":""list_charts""," & _
+        """description"":""List all charts on a worksheet with their names, types and data ranges""," & _
+        """parameters"":{""type"":""object"",""properties"":{" & _
+            """sheet"":{""type"":""string"",""description"":""Sheet name (optional, defaults to active sheet)""}" & _
+        "},""required"":[]}}}"
 End Function

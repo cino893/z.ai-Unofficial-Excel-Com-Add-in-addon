@@ -24,7 +24,7 @@ Private m_conversationStarted As Boolean
 ' --- Form Initialize ---
 Private Sub UserForm_Initialize()
     ' Setup will be called from build script or manually
-    Me.Caption = "Z.AI - Asystent Excel"
+    Me.Caption = T("chat.title")
     Me.Width = 520
     Me.Height = 620
     
@@ -34,14 +34,7 @@ Private Sub UserForm_Initialize()
     m_conversationStarted = False
     
     ' Show welcome message
-    AppendChat "Z.AI", "Witaj! Jestem asystentem AI zintegrowanym z Excel." & vbCrLf & _
-               "Moge pomoc Ci edytowac arkusz - po prostu opisz co chcesz zrobic." & vbCrLf & vbCrLf & _
-               "Przyklady polecen:" & vbCrLf & _
-               "  - Przeczytaj dane z kolumny A" & vbCrLf & _
-               "  - Dodaj sume w komorce B10" & vbCrLf & _
-               "  - Sformatuj naglowki na pogrubione z szarym tlem" & vbCrLf & _
-               "  - Posortuj dane wedlug kolumny C malejaco" & vbCrLf & _
-               "  - Stworz wykres kolumnowy z danych A1:B5"
+    AppendChat "Z.AI", T("chat.welcome")
     
     LogInfo "Chat form opened"
 End Sub
@@ -75,7 +68,7 @@ Private Sub CreateControls()
         .Top = 490
         .Width = 490
         .Height = 18
-        .Caption = "Gotowy"
+        .Caption = T("chat.ready")
         .Font.Size = 8
         .ForeColor = &H00808080
     End With
@@ -103,7 +96,7 @@ Private Sub CreateControls()
         .Top = 512
         .Width = 82
         .Height = 50
-        .Caption = "Wyslij"
+        .Caption = T("chat.send")
         .Font.Size = 10
         .Font.Bold = True
     End With
@@ -116,7 +109,7 @@ Private Sub CreateControls()
         .Top = 570
         .Width = 120
         .Height = 25
-        .Caption = "Nowa rozmowa"
+        .Caption = T("chat.new")
         .Font.Size = 8
     End With
     
@@ -128,7 +121,7 @@ Private Sub CreateControls()
         .Top = 570
         .Width = 100
         .Height = 25
-        .Caption = "Wyczysc"
+        .Caption = T("chat.clear")
         .Font.Size = 8
     End With
     
@@ -145,8 +138,8 @@ Public Sub btnNew_Click()
     ResetConversation
     Me.Controls("txtChat").Text = ""
     m_conversationStarted = False
-    AppendChat "Z.AI", "Nowa rozmowa rozpoczeta. Jak moge pomoc?"
-    SetStatus "Gotowy"
+    AppendChat "Z.AI", T("chat.new_started")
+    SetStatus T("chat.ready")
 End Sub
 
 ' --- Clear chat ---
@@ -185,7 +178,7 @@ Private Sub SendMessage()
     ' Disable input during processing
     txtInput.Enabled = False
     Me.Controls("btnSend").Enabled = False
-    SetStatus "Przetwarzanie..."
+    SetStatus T("chat.processing")
     DoEvents
     
     ' Send to agent
@@ -198,7 +191,7 @@ Private Sub SendMessage()
     ' Re-enable input
     txtInput.Enabled = True
     Me.Controls("btnSend").Enabled = True
-    SetStatus "Gotowy (" & GetMessageCount() & " wiadomosci)"
+    SetStatus TFormat("chat.ready_count", GetMessageCount())
     txtInput.SetFocus
 End Sub
 

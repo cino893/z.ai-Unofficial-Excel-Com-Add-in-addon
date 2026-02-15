@@ -133,7 +133,7 @@ Public Sub ViewLog()
     If Dir(m_logFilePath) <> "" Then
         Shell "notepad.exe """ & m_logFilePath & """", vbNormalFocus
     Else
-        MsgBox "Brak pliku logu." & vbCrLf & "Sciezka: " & m_logFilePath, vbInformation, "Z.AI Debug"
+        MsgBox T("debug.no_log") & vbCrLf & T("debug.path") & m_logFilePath, vbInformation, "Z.AI Debug"
     End If
 End Sub
 

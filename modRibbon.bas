@@ -14,6 +14,9 @@ Public Sub CreateZaiMenu()
     RemoveZaiMenu
     On Error GoTo ErrHandler
     
+    ' Initialize i18n
+    InitI18n
+    
     Dim menuBar As CommandBar
     Set menuBar = Application.CommandBars("Worksheet Menu Bar")
     
@@ -24,7 +27,7 @@ Public Sub CreateZaiMenu()
     ' --- Chat (main feature) ---
     Dim btnChat As CommandBarButton
     Set btnChat = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnChat.Caption = "&Asystent AI (Chat)"
+    btnChat.Caption = T("menu.chat")
     btnChat.FaceId = 581
     btnChat.OnAction = "ShowChatDialog"
     btnChat.BeginGroup = False
@@ -32,50 +35,57 @@ Public Sub CreateZaiMenu()
     ' --- Quick Command ---
     Dim btnQuick As CommandBarButton
     Set btnQuick = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnQuick.Caption = "&Szybkie polecenie"
+    btnQuick.Caption = T("menu.quick")
     btnQuick.FaceId = 487
     btnQuick.OnAction = "ShowQuickCommand"
     
     ' --- Separator + Auth ---
     Dim btnLogin As CommandBarButton
     Set btnLogin = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnLogin.Caption = "&Zaloguj (Klucz API)"
+    btnLogin.Caption = T("menu.login")
     btnLogin.FaceId = 2144
     btnLogin.OnAction = "ShowLogin"
     btnLogin.BeginGroup = True
     
     Dim btnLogout As CommandBarButton
     Set btnLogout = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnLogout.Caption = "&Wyloguj"
+    btnLogout.Caption = T("menu.logout")
     btnLogout.FaceId = 358
     btnLogout.OnAction = "ShowLogout"
     
     ' --- Separator + Settings ---
     Dim btnModel As CommandBarButton
     Set btnModel = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnModel.Caption = "&Wybierz model"
+    btnModel.Caption = T("menu.model")
     btnModel.FaceId = 548
     btnModel.OnAction = "ShowModelSelector"
     btnModel.BeginGroup = True
     
+    ' --- Language ---
+    Dim btnLang As CommandBarButton
+    Set btnLang = zaiMenu.Controls.Add(Type:=msoControlButton)
+    btnLang.Caption = T("menu.language")
+    btnLang.FaceId = 224
+    btnLang.OnAction = "ShowLanguageSelector"
+    
     ' --- Separator + Debug ---
     Dim btnViewLog As CommandBarButton
     Set btnViewLog = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnViewLog.Caption = "&Pokaz log debugowania"
+    btnViewLog.Caption = T("menu.viewlog")
     btnViewLog.FaceId = 547
     btnViewLog.OnAction = "ViewLog"
     btnViewLog.BeginGroup = True
     
     Dim btnClearLog As CommandBarButton
     Set btnClearLog = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnClearLog.Caption = "&Wyczysc log"
+    btnClearLog.Caption = T("menu.clearlog")
     btnClearLog.FaceId = 472
     btnClearLog.OnAction = "ClearLog"
     
     ' --- About ---
     Dim btnAbout As CommandBarButton
     Set btnAbout = zaiMenu.Controls.Add(Type:=msoControlButton)
-    btnAbout.Caption = "&O dodatku Z.AI"
+    btnAbout.Caption = T("menu.about")
     btnAbout.FaceId = 487
     btnAbout.OnAction = "ShowAbout"
     btnAbout.BeginGroup = True
@@ -102,8 +112,8 @@ Public Sub ShowChatDialog()
     
     If Not IsLoggedIn() Then
         Dim resp As VbMsgBoxResult
-        resp = MsgBox("Musisz najpierw sie zalogowac (podac klucz API)." & vbCrLf & _
-                      "Czy chcesz to zrobic teraz?", vbQuestion + vbYesNo, "Z.AI")
+        resp = MsgBox(T("auth.need_login") & vbCrLf & _
+                      T("auth.want_login"), vbQuestion + vbYesNo, "Z.AI")
         If resp = vbYes Then
             ShowLogin
             If Not IsLoggedIn() Then Exit Sub
@@ -118,7 +128,7 @@ Public Sub ShowChatDialog()
     Exit Sub
 ErrHandler:
     LogErrorDetails "ShowChatDialog", Err.Number, Err.Description
-    MsgBox "Blad: " & Err.Description, vbCritical, "Z.AI"
+    MsgBox T("error.generic") & Err.Description, vbCritical, "Z.AI"
 End Sub
 
 ' --- Show Quick Command ---
@@ -131,18 +141,11 @@ Public Sub ShowQuickCommand()
     End If
     
     Dim command As String
-    command = InputBox( _
-        "Wpisz polecenie dla asystenta AI:" & vbCrLf & vbCrLf & _
-        "Przyklady:" & vbCrLf & _
-        "  - Podsumuj dane w kolumnie A" & vbCrLf & _
-        "  - Dodaj formule SUM do B10" & vbCrLf & _
-        "  - Sformatuj naglowki na pogrubione" & vbCrLf & _
-        "  - Stworz wykres z danych A1:B10", _
-        "Z.AI - Szybkie polecenie")
+    command = InputBox(T("quick.prompt"), T("quick.title"))
     
     If command = "" Then Exit Sub
     
-    Application.StatusBar = "Z.AI: Przetwarzanie polecenia..."
+    Application.StatusBar = T("quick.status")
     DoEvents
     
     Dim result As String
@@ -150,13 +153,13 @@ Public Sub ShowQuickCommand()
     
     Application.StatusBar = False
     
-    MsgBox result, vbInformation, "Z.AI - Odpowiedz"
+    MsgBox result, vbInformation, T("quick.result_title")
     
     Exit Sub
 ErrHandler:
     Application.StatusBar = False
     LogErrorDetails "ShowQuickCommand", Err.Number, Err.Description
-    MsgBox "Blad: " & Err.Description, vbCritical, "Z.AI"
+    MsgBox T("error.generic") & Err.Description, vbCritical, "Z.AI"
 End Sub
 
 ' --- Show Model Selector ---
@@ -166,38 +169,43 @@ Public Sub ShowModelSelector()
     
     Dim model As String
     model = InputBox( _
-        "Wybierz model z.ai:" & vbCrLf & vbCrLf & _
-        "Dostepne modele:" & vbCrLf & _
-        "  glm-4-plus  (domyslny, szybki)" & vbCrLf & _
-        "  glm-4-long  (dlugi kontekst)" & vbCrLf & _
-        "  glm-4       (standardowy)" & vbCrLf & _
-        "  glm-3-turbo (najszybszy)" & vbCrLf & vbCrLf & _
-        "Aktualny: " & currentModel, _
-        "Z.AI - Wybor modelu", _
+        T("model.prompt") & vbCrLf & vbCrLf & _
+        T("model.current") & currentModel, _
+        T("model.title"), _
         currentModel)
     
     If model = "" Then Exit Sub
     
     SaveModel Trim(model)
-    MsgBox "Model zmieniony na: " & Trim(model), vbInformation, "Z.AI"
+    MsgBox T("model.changed") & Trim(model), vbInformation, "Z.AI"
+End Sub
+
+' --- Show Language Selector ---
+Public Sub ShowLanguageSelector()
+    Dim current As String
+    current = GetLanguage()
+    
+    Dim choice As String
+    choice = InputBox( _
+        "Select language / Wybierz jezyk:" & vbCrLf & vbCrLf & _
+        "  pl - Polski" & vbCrLf & _
+        "  en - English" & vbCrLf & vbCrLf & _
+        "Current / Aktualny: " & current, _
+        T("lang.title"), _
+        current)
+    
+    If choice = "" Then Exit Sub
+    
+    choice = LCase(Trim(choice))
+    If choice = "pl" Or choice = "en" Then
+        SetLanguage choice
+        ' Recreate menu with new language
+        CreateZaiMenu
+        MsgBox T("lang.changed"), vbInformation, T("lang.title")
+    End If
 End Sub
 
 ' --- Show About ---
 Public Sub ShowAbout()
-    MsgBox _
-        "Z.AI Excel Add-in" & vbCrLf & _
-        "Wersja: 1.0.0" & vbCrLf & vbCrLf & _
-        "Asystent AI zintegrowany z Microsoft Excel." & vbCrLf & _
-        "Wykorzystuje platforme z.ai (Zhipu AI) do" & vbCrLf & _
-        "inteligentnej edycji arkuszy kalkulacyjnych." & vbCrLf & vbCrLf & _
-        "Mozliwosci:" & vbCrLf & _
-        "  - Czytanie i zapisywanie komorek" & vbCrLf & _
-        "  - Formatowanie danych" & vbCrLf & _
-        "  - Wstawianie formul" & vbCrLf & _
-        "  - Sortowanie danych" & vbCrLf & _
-        "  - Tworzenie wykresow" & vbCrLf & _
-        "  - Zarzadzanie arkuszami" & vbCrLf & vbCrLf & _
-        "Strona: https://z.ai" & vbCrLf & _
-        "Dokumentacja API: https://docs.z.ai", _
-        vbInformation, "Z.AI - O dodatku"
+    MsgBox T("about.text"), vbInformation, T("about.title")
 End Sub
