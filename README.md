@@ -2,150 +2,129 @@
 
 Dodatek do Microsoft Excel umożliwiający korzystanie z agenta AI platformy **z.ai** (Zhipu AI) bezpośrednio w arkuszu kalkulacyjnym.
 
+**Wersja 2.0** — przepisana jako .NET COM Add-in z nowoczesnym interfejsem WPF.
+
+## ✨ Nowości w v2.0
+
+- **Prawdziwy panel boczny** (Custom Task Pane) — czat wyświetla się po prawej stronie Excela
+- **Piękny interfejs WPF** — dymki czatu, gradient, animowane wskaźniki, logo
+- **8 języków** — PL, EN, DE, FR, ES, UK, ZH, JA (auto-wykrywanie z Windowsa)
+- **15 narzędzi AI** — w tym `list_charts` i `delete_chart` (naprawiony bug z pętlą wykresów)
+- **Wykrywanie pętli** — AI nie powtarza tych samych operacji w nieskończoność
+- **Wstążka (Ribbon)** — dedykowana zakładka Z.AI z przyciskami
+
 ## Możliwości
 
-Agent AI może wykonywać następujące operacje na Twoim arkuszu:
-
-| Skill | Opis |
-|-------|------|
-| `read_cell` | Odczyt wartości, formuły i typu z komórki |
-| `write_cell` | Zapis wartości do komórki |
-| `read_range` | Odczyt danych z zakresu komórek |
-| `write_range` | Zapis tablicy danych od wskazanej komórki |
-| `get_sheet_info` | Informacje o arkuszu (zakres, nagłówki, wymiary) |
-| `get_workbook_info` | Informacje o skoroszycie (arkusze, nazwa, ścieżka) |
-| `format_range` | Formatowanie (pogrubienie, kolory, ramki, wyrównanie, itp.) |
+| Tool | Opis |
+|------|------|
+| `read_cell` / `write_cell` | Odczyt/zapis komórki |
+| `read_range` / `write_range` | Odczyt/zapis zakresu (tablice 2D) |
+| `get_sheet_info` | Informacje o arkuszu (wymiary, nagłówki) |
+| `get_workbook_info` | Informacje o skoroszycie (arkusze, ścieżka) |
+| `format_range` | Formatowanie (czcionka, kolory, ramki, wyrównanie, merge) |
 | `insert_formula` | Wstawianie formuł Excel |
 | `sort_range` | Sortowanie danych |
-| `add_sheet` | Dodawanie nowego arkusza |
-| `delete_rows` | Usuwanie wierszy |
-| `insert_rows` | Wstawianie wierszy |
-| `create_chart` | Tworzenie wykresów (kolumnowy, liniowy, kołowy, itp.) |
+| `add_sheet` | Dodawanie arkusza |
+| `delete_rows` / `insert_rows` | Usuwanie/wstawianie wierszy |
+| `create_chart` | Tworzenie wykresów (column, bar, line, pie, scatter, area) |
+| `delete_chart` | Usuwanie wykresu |
+| `list_charts` | Lista wykresów na arkuszu |
 
 ## Wymagania
 
-- Microsoft Excel 2016 lub nowszy (Windows)
-- Klucz API z platformy [z.ai](https://open.z.ai/) (rejestracja darmowa)
-- Włączony dostęp do modelu obiektów VBA (instrukcja poniżej)
+- Microsoft Excel 2016+ (Windows, 64-bit zalecany)
+- .NET 8.0 Runtime ([pobierz](https://dotnet.microsoft.com/download/dotnet/8.0))
+- Klucz API z [z.ai](https://open.z.ai/) (rejestracja darmowa)
+
+## Budowanie
+
+Wymagany .NET SDK 8.0+:
+
+```powershell
+cd src\ZaiExcelAddin
+dotnet build -c Release
+```
+
+Wynik: `src\ZaiExcelAddin\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
 
 ## Instalacja
-
-### Krok 1: Włącz dostęp do VBA
-
-1. Otwórz Excel
-2. **Plik** → **Opcje** → **Centrum zaufania** → **Ustawienia Centrum zaufania**
-3. **Ustawienia makr** → zaznacz **Ufaj dostępowi do modelu obiektów projektu VBA**
-4. Kliknij **OK**
-
-### Krok 2: Zbuduj dodatek
-
-Uruchom skrypt budujący (wymaga Excela na komputerze):
-
-```
-cscript build.vbs
-```
-
-Lub kliknij dwukrotnie plik `build.vbs`.
-
-Skrypt automatycznie:
-- Uruchomi Excel w tle
-- Zaimportuje wszystkie moduły VBA
-- Utworzy formularz czatu
-- Zapisze plik `ZaiExcelAddin.xlam`
-
-### Krok 3: Zainstaluj dodatek
 
 1. Otwórz Excel
 2. **Plik** → **Opcje** → **Dodatki**
 3. Na dole: **Zarządzaj** → **Dodatki programu Excel** → **Przejdź**
-4. Kliknij **Przeglądaj** i wskaż plik `ZaiExcelAddin.xlam`
-5. Zaznacz **ZaiExcelAddin** i kliknij **OK**
+4. Kliknij **Przeglądaj** i wskaż plik `ZaiExcelAddin-AddIn64-packed.xll`
+5. Zatwierdź
 
-### Alternatywnie: Instalacja ręczna
-
-Jeśli skrypt `build.vbs` nie działa, możesz zaimportować moduły ręcznie:
-
-1. Otwórz Excel → **Alt+F11** (edytor VBA)
-2. **Plik** → **Importuj plik** (Ctrl+M)
-3. Zaimportuj po kolei pliki: `modJSON.bas`, `modDebug.bas`, `modAuth.bas`, `modZaiAPI.bas`, `modExcelSkills.bas`, `modConversation.bas`, `modRibbon.bas`
-4. Zapisz jako `.xlam` (**Plik** → **Zapisz jako** → typ: **Dodatek programu Excel (*.xlam)**)
+Zakładka **Z.AI** pojawi się na wstążce.
 
 ## Użytkowanie
 
 ### Logowanie
+Kliknij **Z.AI** → **Login** → wpisz klucz API z platformy z.ai.
 
-1. Kliknij **Z.AI** → **Zaloguj (Klucz API)** w menu Excel
-2. Wpisz swój klucz API z platformy z.ai
-3. Klucz zostanie zweryfikowany i zapisany (w rejestrze Windows)
+### Czat z AI
+Kliknij przycisk **💬 Chat** na wstążce Z.AI — otworzy się panel boczny z czatem.
 
-### Czat z agentem
+Przykłady poleceń:
+- "Przeczytaj dane z A1:D10"
+- "Dodaj formułę SUM do E1"
+- "Sformatuj nagłówki na pogrubione z niebieskim tłem"
+- "Stwórz wykres kołowy z A1:B5"
+- "Posortuj po kolumnie C malejąco"
 
-1. Kliknij **Z.AI** → **Asystent AI (Chat)**
-2. Wpisz polecenie po polsku, np.:
-   - "Przeczytaj dane z komórek A1:D10"
-   - "Dodaj formułę SUM do komórki E1 sumującą kolumnę D"
-   - "Sformatuj wiersz 1 na pogrubiony z szarym tłem"
-   - "Posortuj dane malejąco po kolumnie B"
-   - "Stwórz wykres kołowy z danych A1:B5"
-3. Agent automatycznie przeczyta Twój arkusz, wykona operacje i potwierdzi
-
-### Szybkie polecenie
-
-**Z.AI** → **Szybkie polecenie** — jednorazowe polecenie bez historii czatu.
-
-## Debugowanie
-
-- **Z.AI** → **Pokaż log debugowania** — otwiera plik logu w Notatniku
-- **Z.AI** → **Wyczyść log** — czyści plik logu
-- Logi zapisywane w: `%APPDATA%\ZaiExcelAddin\zai_debug_RRRR-MM-DD.log`
-- Logowane są: żądania/odpowiedzi API, wywołania narzędzi, błędy
+### Zmiana języka
+**Z.AI** → **Language** → wpisz kod: `pl`, `en`, `de`, `fr`, `es`, `uk`, `zh`, `ja`
 
 ## Struktura projektu
 
 ```
 dodatek-z-ai-opus/
-├── modJSON.bas          # Parser/builder JSON dla VBA
-├── modDebug.bas         # Logowanie debugowe
-├── modAuth.bas          # Zarządzanie kluczem API
-├── modZaiAPI.bas        # Komunikacja z API z.ai
-├── modExcelSkills.bas   # 13 umiejętności (tools) do edycji Excela
-├── modConversation.bas  # Pętla konwersacji z tool-calling
-├── modRibbon.bas        # Menu w pasku Excel
-├── frmZaiChat.frm       # Formularz czatu (backup)
-├── build.vbs            # Skrypt budujący .xlam
-└── README.md            # Ta dokumentacja
+├── src/ZaiExcelAddin/           # .NET COM Add-in (v2.0)
+│   ├── ZaiExcelAddin.csproj     # Projekt C# + ExcelDNA
+│   ├── AddIn.cs                 # Punkt wejścia (IExcelAddIn)
+│   ├── RibbonController.cs      # Wstążka + Custom Task Pane
+│   ├── Models/
+│   │   └── ChatMessage.cs
+│   ├── Services/
+│   │   ├── AuthService.cs       # Klucz API (rejestr Windows)
+│   │   ├── ConversationService.cs # Pętla tool-calling
+│   │   ├── DebugLogger.cs       # Logowanie
+│   │   ├── ExcelSkillService.cs # 15 narzędzi Excel
+│   │   ├── I18nService.cs       # 8 języków
+│   │   └── ZaiApiService.cs     # HTTP do z.ai API
+│   └── UI/
+│       ├── ChatPanel.xaml        # Interfejs WPF czatu
+│       ├── ChatPanel.xaml.cs
+│       └── ChatPaneHost.cs       # Host WinForms dla CTP
+├── *.bas, *.frm                 # Legacy VBA (v1.0)
+├── build.vbs                    # Legacy: budowanie .xlam
+└── README.md
 ```
 
-## Architektura
+## Architektura v2.0
 
 ```
-┌─────────────┐     HTTP/JSON      ┌──────────────────┐
-│  z.ai API   │◄──────────────────►│   modZaiAPI.bas   │
-│  (GLM-4+)   │                    └────────┬─────────┘
-└─────────────┘                             │
-                                   ┌────────▼─────────┐
-                                   │ modConversation   │
-                                   │ (tool-calling     │
-                                   │  loop)            │
-                                   └────────┬─────────┘
-                                            │
-                                   ┌────────▼─────────┐
-                                   │ modExcelSkills    │──► ActiveWorkbook
-                                   │ (13 narzędzi)     │
-                                   └──────────────────┘
+┌──────────────┐    HTTP/JSON     ┌─────────────────┐
+│   z.ai API   │◄───────────────►│  ZaiApiService   │
+│   (GLM-4+)   │                 └────────┬────────┘
+└──────────────┘                          │
+                                ┌─────────▼────────┐
+                                │ ConversationSvc   │ ← tool-calling loop
+                                │ (max 15 rounds,   │   + loop detection
+                                │  dedup detection)  │
+                                └─────────┬────────┘
+                                          │
+                     ┌────────────────────┼────────────────────┐
+                     │                    │                    │
+              ┌──────▼──────┐    ┌───────▼──────┐    ┌───────▼──────┐
+              │  ChatPanel   │    │ ExcelSkillSvc │    │  I18nService  │
+              │  (WPF CTP)   │    │ (15 tools)    │    │  (8 langs)    │
+              └─────────────┘    └──────────────┘    └──────────────┘
 ```
 
-Agent z.ai otrzymuje definicje narzędzi (tools) w formacie OpenAI-compatible, a następnie autonomicznie decyduje które wywołać. Dodatek wykonuje te wywołania na aktywnym skoroszycie i zwraca wyniki agentowi.
+## Wersja Legacy (VBA)
 
-## Rozwiązywanie problemów
-
-| Problem | Rozwiązanie |
-|---------|-------------|
-| "Brak dostępu do VBA" | Włącz opcję w Centrum zaufania (Krok 1) |
-| "HTTP 401" | Nieprawidłowy klucz API — sprawdź na open.z.ai |
-| "Network error" | Sprawdź połączenie internetowe |
-| Menu Z.AI nie pojawia się | Upewnij się, że dodatek jest załadowany (Opcje → Dodatki) |
-| Agent nie widzi danych | Agent musi najpierw użyć `get_sheet_info` — opisz co chcesz zrobić |
+Stara wersja VBA (.xlam) jest nadal dostępna — uruchom `cscript build.vbs` aby ją zbudować.
 
 ## Licencja
 

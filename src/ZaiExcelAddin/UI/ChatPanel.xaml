@@ -1,0 +1,301 @@
+<UserControl x:Class="ZaiExcelAddin.UI.ChatPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:ZaiExcelAddin.UI"
+             Background="#F0F2F5" FontFamily="Segoe UI">
+
+    <UserControl.Resources>
+        <!-- Branding gradients -->
+        <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#667EEA" Offset="0"/>
+            <GradientStop Color="#764BA2" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="SendBtnGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#667EEA" Offset="0"/>
+            <GradientStop Color="#5A67D8" Offset="1"/>
+        </LinearGradientBrush>
+
+        <!-- Template selector -->
+        <local:MessageTemplateSelector x:Key="MessageSelector">
+            <local:MessageTemplateSelector.UserTemplate>
+                <DataTemplate>
+                    <Border Margin="48,4,12,4" HorizontalAlignment="Right" MaxWidth="320"
+                            CornerRadius="16,16,4,16" Padding="14,10"
+                            Background="{StaticResource PrimaryGradient}">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.15"/>
+                        </Border.Effect>
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                   Foreground="White" FontSize="13" LineHeight="20"/>
+                    </Border>
+                </DataTemplate>
+            </local:MessageTemplateSelector.UserTemplate>
+            <local:MessageTemplateSelector.AssistantTemplate>
+                <DataTemplate>
+                    <Grid Margin="12,4,48,4" HorizontalAlignment="Left" MaxWidth="320">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="28"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- AI avatar -->
+                        <Border Grid.Column="0" Width="24" Height="24" CornerRadius="12"
+                                Background="{StaticResource PrimaryGradient}" VerticalAlignment="Top" Margin="0,2,4,0">
+                            <TextBlock Text="Z" FontSize="12" FontWeight="Bold" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border Grid.Column="1" CornerRadius="16,16,16,4" Padding="14,10"
+                                Background="White" BorderBrush="#E4E6EB" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="1" BlurRadius="4" Opacity="0.08"/>
+                            </Border.Effect>
+                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                       Foreground="#1C1E21" FontSize="13" LineHeight="20"/>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </local:MessageTemplateSelector.AssistantTemplate>
+            <local:MessageTemplateSelector.SystemTemplate>
+                <DataTemplate>
+                    <Border Margin="24,8" HorizontalAlignment="Center" Padding="12,6"
+                            CornerRadius="12" Background="#E4E6EB">
+                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                   Foreground="#65676B" FontSize="12" FontStyle="Italic"
+                                   TextAlignment="Center"/>
+                    </Border>
+                </DataTemplate>
+            </local:MessageTemplateSelector.SystemTemplate>
+        </local:MessageTemplateSelector>
+
+        <!-- Styled scrollbar -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="6"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="56"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="28"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Header ═══ -->
+        <Border Grid.Row="0" Background="{StaticResource PrimaryGradient}" CornerRadius="0">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Logo -->
+                <Viewbox Grid.Column="0" Width="32" Height="32" Margin="0,0,10,0">
+                    <Canvas Width="32" Height="32">
+                        <Path Fill="White" Opacity="0.95"
+                              Data="M4,4 L28,4 L28,9.5 L14,24 L28,24 L28,28 L4,28 L4,22.5 L18,8 L4,8 Z"/>
+                        <Ellipse Canvas.Left="24" Canvas.Top="2" Width="7" Height="7"
+                                 Fill="#FFD93D" Opacity="0.9"/>
+                    </Canvas>
+                </Viewbox>
+
+                <!-- Title -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Z.AI" FontSize="18" FontWeight="SemiBold" Foreground="White"/>
+                    <TextBlock x:Name="lblSubtitle" Text="Excel Assistant" FontSize="11"
+                               Foreground="#FFFFFFCC" Margin="0,-2,0,0"/>
+                </StackPanel>
+
+                <!-- New chat button -->
+                <Button Grid.Column="2" x:Name="btnNewChat" Content="⟳" FontSize="18"
+                        Foreground="White" Background="Transparent" BorderThickness="0"
+                        Cursor="Hand" ToolTip="New Chat" Width="32" Height="32"
+                        Click="OnNewChat" VerticalAlignment="Center">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="16"
+                                    Width="32" Height="32">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#FFFFFF22"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Messages area ═══ -->
+        <ScrollViewer Grid.Row="1" x:Name="scrollMessages"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="0,8">
+            <ItemsControl x:Name="lstMessages"
+                          ItemTemplateSelector="{StaticResource MessageSelector}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Typing indicator (hidden by default) -->
+        <Border Grid.Row="1" x:Name="typingIndicator" Visibility="Collapsed"
+                VerticalAlignment="Bottom" HorizontalAlignment="Left"
+                Margin="44,0,0,8" Padding="12,8" CornerRadius="12"
+                Background="White" BorderBrush="#E4E6EB" BorderThickness="1">
+            <StackPanel Orientation="Horizontal">
+                <Ellipse Width="6" Height="6" Fill="#667EEA" Margin="0,0,4,0">
+                    <Ellipse.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard RepeatBehavior="Forever">
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                     From="0.3" To="1" Duration="0:0:0.6"
+                                                     AutoReverse="True"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Ellipse.Triggers>
+                </Ellipse>
+                <Ellipse Width="6" Height="6" Fill="#667EEA" Margin="0,0,4,0">
+                    <Ellipse.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard RepeatBehavior="Forever" BeginTime="0:0:0.2">
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                     From="0.3" To="1" Duration="0:0:0.6"
+                                                     AutoReverse="True"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Ellipse.Triggers>
+                </Ellipse>
+                <Ellipse Width="6" Height="6" Fill="#667EEA">
+                    <Ellipse.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard RepeatBehavior="Forever" BeginTime="0:0:0.4">
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                     From="0.3" To="1" Duration="0:0:0.6"
+                                                     AutoReverse="True"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Ellipse.Triggers>
+                </Ellipse>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══ Input area ═══ -->
+        <Border Grid.Row="2" Background="White" Padding="12,10"
+                BorderBrush="#E4E6EB" BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Text input -->
+                <Border Grid.Row="0" CornerRadius="20" BorderBrush="#D1D5DB" BorderThickness="1.5"
+                        Background="#F9FAFB" Padding="4,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtInput" Grid.Column="0"
+                                 BorderThickness="0" Background="Transparent"
+                                 FontSize="13" Padding="12,8"
+                                 VerticalContentAlignment="Center"
+                                 AcceptsReturn="False" TextWrapping="Wrap"
+                                 MaxHeight="80" VerticalScrollBarVisibility="Auto"
+                                 KeyDown="OnInputKeyDown"/>
+                        <!-- Placeholder text -->
+                        <TextBlock x:Name="txtPlaceholder" Grid.Column="0"
+                                   Text="Type a message..." FontSize="13"
+                                   Foreground="#9CA3AF" IsHitTestVisible="False"
+                                   VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        <!-- Send button -->
+                        <Button Grid.Column="1" x:Name="btnSend" Content="➤"
+                                Width="36" Height="36" FontSize="16"
+                                Foreground="White" Cursor="Hand" Margin="4"
+                                Click="OnSendClick">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="18"
+                                            Background="{StaticResource SendBtnGradient}">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="Bd" Property="Background" Value="#D1D5DB"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Action buttons -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="btnNewConv" Content="🗨 New" Margin="4,0"
+                            FontSize="11" Foreground="#667EEA" Background="Transparent"
+                            BorderBrush="#667EEA" BorderThickness="1" Padding="10,4"
+                            Cursor="Hand" Click="OnNewChat">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" CornerRadius="12" Padding="10,4"
+                                        BorderBrush="#667EEA" BorderThickness="1"
+                                        Background="Transparent">
+                                    <ContentPresenter HorizontalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#667EEA15"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                    <Button x:Name="btnClear" Content="🗑 Clear" Margin="4,0"
+                            FontSize="11" Foreground="#6B7280" Background="Transparent"
+                            BorderBrush="#D1D5DB" BorderThickness="1" Padding="10,4"
+                            Cursor="Hand" Click="OnClearChat">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" CornerRadius="12" Padding="10,4"
+                                        BorderBrush="#D1D5DB" BorderThickness="1"
+                                        Background="Transparent">
+                                    <ContentPresenter HorizontalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#F3F4F6"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ Status bar ═══ -->
+        <Border Grid.Row="3" Background="#F9FAFB" BorderBrush="#E4E6EB" BorderThickness="0,1,0,0">
+            <TextBlock x:Name="lblStatus" Text="Ready" FontSize="11"
+                       Foreground="#9CA3AF" Margin="12,0"
+                       VerticalAlignment="Center"/>
+        </Border>
+    </Grid>
+</UserControl>
