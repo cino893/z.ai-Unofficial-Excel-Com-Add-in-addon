@@ -21,7 +21,7 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 4. Click **Browse** and select the downloaded `ZaiExcelAddin-AddIn64-packed.xll`
 5. Confirm — the **Z.AI** tab appears on the ribbon
 
-> 📖 Need a visual guide? See [How to add an Excel Add-in — with screenshots (Microsoft Support)](https://support.microsoft.com/en-us/office/add-or-remove-add-ins-in-excel-0af570c4-5cf3-4fa9-9b88-403625a0b460).
+> 📖 Need a visual guide? See [How to add an Excel Add-in — with screenshots (Microsoft Support)](https://support.microsoft.com/en-us/office/add-or-remove-add-ins-in-excel-0af570c4-5cf3-4fa9-9b88-403625a0b460). Note: this Microsoft Support page is the "Add or remove add-ins in Excel" topic (Polish: "Dodawanie lub usuwanie dodatku COM").
 
 ### Requirements
 
