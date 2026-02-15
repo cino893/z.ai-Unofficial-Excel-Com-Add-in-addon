@@ -4,6 +4,18 @@ Dodatek do Microsoft Excel umożliwiający korzystanie z agenta AI platformy **z
 
 **Wersja 2.0** — przepisana jako .NET COM Add-in z nowoczesnym interfejsem WPF.
 
+![Showreel](show-reel.gif)
+
+## Wersje projektu
+
+- **v2.0 (.NET COM Add-in)** — główny, rozwijany projekt w folderze `src/ZaiExcelAddin` (solution `dodatek-z-ai-opus.sln`).
+- **v1.0 (VBA .xlam)** — starsza wersja w folderze `legacy`; możesz ją przebudować poleceniem `cscript build.vbs`.
+
+## Pobierz
+
+- [Najnowszy plik XLL (ZaiExcelAddin-AddIn64-packed.xll)](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)
+- [Pełna lista wydań](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
+
 ## ✨ Nowości w v2.0
 
 - **Prawdziwy panel boczny** (Custom Task Pane) — czat wyświetla się po prawej stronie Excela
