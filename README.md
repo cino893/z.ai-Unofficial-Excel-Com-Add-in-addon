@@ -49,7 +49,7 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 
 - **Side-panel AI chat** — Custom Task Pane docked to the right
 - **WPF interface** — chat bubbles, Excel-green theme, typing animation, emoji support
-- **26 Excel tools** — the AI can read/write cells, format ranges, create charts, pivot tables, filters, and more
+- **28 Excel tools** — the AI can read/write cells, format ranges, create charts, pivot tables, filters, and more
 - **12 models** — full catalog with pricing (free flash models included)
 - **8 languages** — auto-detected from Windows locale
 - **Loop detection** — prevents the AI from repeating the same operations endlessly
@@ -80,6 +80,8 @@ An unofficial Excel add-in that integrates the **[Z.AI](https://z.ai)** (Zhipu A
 | `freeze_panes` | Freeze/unfreeze panes at a specific cell |
 | `remove_duplicates` | Remove duplicate rows from a range |
 | `set_validation` | Add data validation (list, number, date, text length) |
+| `list_pivot_tables` | List all PivotTables in the workbook |
+| `clear_range` | Clear contents, formatting, or everything from a range |
 
 ## Build from Source
 
@@ -106,7 +108,7 @@ dodatek-z-ai-opus/
 │   │   ├── AuthService.cs          # API key storage (Windows Registry)
 │   │   ├── ConversationService.cs  # Tool-calling loop + loop detection
 │   │   ├── DebugLogger.cs          # File logging
-│   │   ├── ExcelSkillService.cs    # 26 Excel tools
+│   │   ├── ExcelSkillService.cs    # 28 Excel tools
 │   │   ├── I18nService.cs          # 8-language i18n
 │   │   └── ZaiApiService.cs        # Z.AI HTTP client + model catalog
 │   └── UI/
@@ -137,7 +139,7 @@ dodatek-z-ai-opus/
                      │                    │                    │
               ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
               │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
-              │  (WPF CTP)   │    │  (26 tools)    │    │  (8 langs)    │
+              │  (WPF CTP)   │    │  (28 tools)    │    │  (8 langs)    │
               └─────────────┘    └───────────────┘    └──────────────┘
 ```
 

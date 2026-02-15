@@ -33,6 +33,10 @@ public partial class ExcelSkillService
         int startRow = Int(args["start_row"]);
         int count = Int(args["count"], 1);
 
+        if (startRow < 1)
+            return JsonSerializer.Serialize(new { error = "start_row must be >= 1" });
+        if (count < 1) count = 1;
+
         ws.Rows[$"{startRow}:{startRow + count - 1}"].Delete();
 
         var result = new JsonObject
@@ -50,6 +54,10 @@ public partial class ExcelSkillService
         dynamic ws = GetTargetSheet(args);
         int atRow = Int(args["at_row"]);
         int count = Int(args["count"], 1);
+
+        if (atRow < 1)
+            return JsonSerializer.Serialize(new { error = "at_row must be >= 1" });
+        if (count < 1) count = 1;
 
         for (int i = 0; i < count; i++)
             ws.Rows[atRow].Insert(-4121); // xlDown
@@ -85,8 +93,13 @@ public partial class ExcelSkillService
     private string SkillDeleteSheet(JsonNode args)
     {
         dynamic app = GetApp();
+        dynamic wb = app.ActiveWorkbook;
         string sheetName = Str(args["sheet"]);
-        dynamic ws = app.ActiveWorkbook.Worksheets[sheetName];
+
+        if (wb.Worksheets.Count <= 1)
+            return JsonSerializer.Serialize(new { error = "Cannot delete the last sheet in the workbook" });
+
+        dynamic ws = wb.Worksheets[sheetName];
 
         app.DisplayAlerts = false;
         try

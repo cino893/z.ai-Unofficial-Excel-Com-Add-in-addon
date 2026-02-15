@@ -324,7 +324,25 @@ public partial class ExcelSkillService
                     ["error_message"] = PropString("Custom error message (optional)"),
                     ["sheet"] = PropString("Sheet name (optional)")
                 },
-                new JsonArray { "range", "type", "formula1" })
+                new JsonArray { "range", "type", "formula1" }),
+
+            MakeTool("list_pivot_tables",
+                "List all PivotTables in the workbook or a specific sheet with their names, source ranges and locations",
+                new JsonObject
+                {
+                    ["sheet"] = PropString("Sheet name (optional, lists all sheets if omitted)")
+                },
+                new JsonArray()),
+
+            MakeTool("clear_range",
+                "Clear contents, formatting, or everything from a range of cells",
+                new JsonObject
+                {
+                    ["range"] = PropString("Range to clear e.g. A1:D10"),
+                    ["what"] = PropString("What to clear: contents, formats, all (default: contents)"),
+                    ["sheet"] = PropString("Sheet name (optional)")
+                },
+                new JsonArray { "range" })
         };
     }
 
@@ -364,6 +382,8 @@ public partial class ExcelSkillService
                 "freeze_panes" => SkillFreezePanes(args),
                 "remove_duplicates" => SkillRemoveDuplicates(args),
                 "set_validation" => SkillSetValidation(args),
+                "list_pivot_tables" => SkillListPivotTables(args),
+                "clear_range" => SkillClearRange(args),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolName}" })
             };
 

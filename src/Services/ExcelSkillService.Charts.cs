@@ -138,7 +138,7 @@ public partial class ExcelSkillService
             name = "PivotTable" + (wb.PivotCaches().Count + 1);
 
         dynamic srcRange = ws.Range[sourceRange];
-        string qualifiedSource = $"{ws.Name}!{srcRange.Address}";
+        string qualifiedSource = $"'{ws.Name}'!{srcRange.Address}";
 
         // xlDatabase = 1
         dynamic cache = wb.PivotCaches().Create(SourceType: 1, SourceData: qualifiedSource);
@@ -215,6 +215,45 @@ public partial class ExcelSkillService
             ["value_fields"] = valFields?.Count ?? 0
         };
         return result.ToJsonString();
+    }
+
+    // --- list_pivot_tables ---
+    private string SkillListPivotTables(JsonNode args)
+    {
+        dynamic app = GetApp();
+        dynamic wb = app.ActiveWorkbook;
+        var sheetFilter = args["sheet"]?.GetValue<string>();
+
+        var pivots = new JsonArray();
+        foreach (dynamic ws in wb.Worksheets)
+        {
+            string wsName = ws.Name;
+            if (sheetFilter != null && !wsName.Equals(sheetFilter, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            foreach (dynamic pt in ws.PivotTables())
+            {
+                string location = "";
+                try { location = pt.TableRange2.Address; } catch { }
+
+                string source = "";
+                try { source = pt.SourceData?.ToString() ?? ""; } catch { }
+
+                pivots.Add(new JsonObject
+                {
+                    ["name"] = (string)pt.Name,
+                    ["sheet"] = wsName,
+                    ["location"] = location,
+                    ["source"] = source
+                });
+            }
+        }
+
+        return new JsonObject
+        {
+            ["pivot_tables"] = pivots,
+            ["count"] = pivots.Count
+        }.ToJsonString();
     }
 
     // --- move_table ---
@@ -295,14 +334,16 @@ public partial class ExcelSkillService
 
         dynamic destRange = destSheet.Range[destCell];
 
-        // 3a. Move pivot table using Location property
+        // 3a. Move pivot table using Location property (string form for cross-sheet)
         if (foundPivot != null)
         {
             string fromSheet = (string)(pivotSheet?.Name ?? "?");
             string ptName = (string)foundPivot.Name;
 
-            // PivotTable.Location moves the table properly without Cut/Paste
-            foundPivot.Location = destRange;
+            // Location requires qualified range string: 'Sheet Name'!A1
+            string destSheetActual = (string)destSheet.Name;
+            string qualifiedDest = $"'{destSheetActual}'!{destCell}";
+            foundPivot.Location = qualifiedDest;
 
             return new JsonObject
             {
@@ -310,7 +351,7 @@ public partial class ExcelSkillService
                 ["moved"] = "pivot_table",
                 ["name"] = ptName,
                 ["from_sheet"] = fromSheet,
-                ["to_sheet"] = (string)destSheet.Name,
+                ["to_sheet"] = destSheetActual,
                 ["dest_cell"] = destCell
             }.ToJsonString();
         }

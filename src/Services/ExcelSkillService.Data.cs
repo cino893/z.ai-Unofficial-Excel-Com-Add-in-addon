@@ -54,20 +54,34 @@ public partial class ExcelSkillService
         int cols = rng.Columns.Count;
 
         var data = new JsonArray();
-        for (int r = 1; r <= rows; r++)
+
+        if (rows == 1 && cols == 1)
         {
+            // Single cell — Value is scalar, not array
+            object? cellVal = rng.Value;
             var row = new JsonArray();
-            for (int c = 1; c <= cols; c++)
-            {
-                object? cellVal = rng.Cells[r, c].Value;
-                if (cellVal == null)
-                    row.Add(null);
-                else if (cellVal is double d)
-                    row.Add(d);
-                else
-                    row.Add(cellVal.ToString());
-            }
+            row.Add(cellVal is double d ? JsonValue.Create(d) : JsonValue.Create(cellVal?.ToString() ?? ""));
             data.Add(row);
+        }
+        else
+        {
+            // Bulk read — single COM call
+            object?[,] values = rng.Value;
+            for (int r = 1; r <= rows; r++)
+            {
+                var row = new JsonArray();
+                for (int c = 1; c <= cols; c++)
+                {
+                    object? cellVal = values[r, c];
+                    if (cellVal == null)
+                        row.Add(null);
+                    else if (cellVal is double d)
+                        row.Add(d);
+                    else
+                        row.Add(cellVal.ToString());
+                }
+                data.Add(row);
+            }
         }
 
         var result = new JsonObject
@@ -260,5 +274,34 @@ public partial class ExcelSkillService
             ["rows_removed"] = rowsBefore - rowsAfter
         };
         return result.ToJsonString();
+    }
+
+    // --- clear_range ---
+    private string SkillClearRange(JsonNode args)
+    {
+        dynamic ws = GetTargetSheet(args);
+        string rangeAddr = Str(args["range"]);
+        string what = Str(args["what"], "contents").ToLowerInvariant();
+        dynamic rng = ws.Range[rangeAddr];
+
+        switch (what)
+        {
+            case "formats":
+                rng.ClearFormats();
+                break;
+            case "all":
+                rng.Clear();
+                break;
+            default: // "contents"
+                rng.ClearContents();
+                break;
+        }
+
+        return new JsonObject
+        {
+            ["success"] = true,
+            ["range"] = rangeAddr,
+            ["cleared"] = what
+        }.ToJsonString();
     }
 }

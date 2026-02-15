@@ -8,11 +8,13 @@ namespace ZaiExcelAddin.Services;
 /// </summary>
 public static class UndoService
 {
-    private static Dictionary<string, object?[,]>? _snapshot;
+    private record SheetSnapshot(object?[,] Formulas, int Rows, int Cols);
+
+    private static Dictionary<string, SheetSnapshot>? _snapshot;
     private static List<string>? _snapshotSheetNames;
     private static bool _hasSnapshot;
 
-    /// <summary>Take a snapshot of every sheet's used range before the agent edits.</summary>
+    /// <summary>Take a snapshot of every sheet's used range (formulas) before the agent edits.</summary>
     public static void CaptureSnapshot()
     {
         try
@@ -21,7 +23,7 @@ public static class UndoService
             dynamic wb = app.ActiveWorkbook;
             if (wb == null) return;
 
-            _snapshot = new Dictionary<string, object?[,]>();
+            _snapshot = new Dictionary<string, SheetSnapshot>();
             _snapshotSheetNames = new List<string>();
 
             foreach (dynamic ws in wb.Worksheets)
@@ -31,12 +33,25 @@ public static class UndoService
 
                 dynamic? used = ws.UsedRange;
                 if (used == null) continue;
-                int cnt = used.Count;
-                if (cnt == 0) continue;
+                int rows = used.Rows.Count;
+                int cols = used.Columns.Count;
+                if (rows == 0 || cols == 0) continue;
 
-                object? raw = used.Value;
-                if (raw is object?[,] values)
-                    _snapshot![name] = values;
+                // Capture formulas (preserves =SUM(...) etc., falls back to value for plain cells)
+                object? raw;
+                if (rows == 1 && cols == 1)
+                {
+                    // Single cell — Formula returns scalar string
+                    var formulas = new object?[1, 1];
+                    formulas[0, 0] = used.Formula;
+                    _snapshot![name] = new SheetSnapshot(formulas, 1, 1);
+                }
+                else
+                {
+                    raw = used.Formula;
+                    if (raw is object?[,] formulas)
+                        _snapshot![name] = new SheetSnapshot(formulas, rows, cols);
+                }
             }
 
             _hasSnapshot = true;
@@ -92,19 +107,16 @@ public static class UndoService
                     try
                     {
                         dynamic ws = wb.Worksheets[kvp.Key];
-                        dynamic used = ws.UsedRange;
-                        // Clear current content first
-                        used.ClearContents();
+                        // Clear everything on the sheet first
+                        ws.Cells.Clear();
 
-                        // Restore saved values
-                        var values = kvp.Value;
-                        int rows = values.GetLength(0);
-                        int cols = values.GetLength(1);
+                        var snap = kvp.Value;
                         dynamic destRange = ws.Range[
                             ws.Cells[1, 1],
-                            ws.Cells[rows, cols]
+                            ws.Cells[snap.Rows, snap.Cols]
                         ];
-                        destRange.Value = values;
+                        // Restore formulas — this restores both formulas and plain values
+                        destRange.Formula = snap.Formulas;
                     }
                     catch (Exception ex)
                     {
