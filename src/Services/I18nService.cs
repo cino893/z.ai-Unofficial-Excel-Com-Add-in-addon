@@ -112,7 +112,40 @@ public class I18nService
             var json = reader.ReadToEnd();
             var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
             if (dict != null)
-                _translations[lang] = dict;
+            {
+                // Normalize values: decode any JSON-style escapes that may be present
+                var normalized = new Dictionary<string, string>();
+                foreach (var kv in dict)
+                {
+                    normalized[kv.Key] = UnescapeJsonEscapes(kv.Value);
+                }
+                _translations[lang] = normalized;
+            }
+        }
+    }
+
+    private string UnescapeJsonEscapes(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        if (!value.Contains("\\u") && !value.Contains("\\n") && !value.Contains("\\r") && !value.Contains("\\t"))
+            return value;
+        try
+        {
+            // Wrap the value as a JSON string literal so the parser decodes any \u escapes
+            var jsonLiteral = "\"" + value.Replace("\"", "\\\"") + "\"";
+            var decoded = JsonSerializer.Deserialize<string>(jsonLiteral);
+            return decoded ?? value;
+        }
+        catch
+        {
+            try
+            {
+                return System.Text.RegularExpressions.Regex.Unescape(value);
+            }
+            catch
+            {
+                return value;
+            }
         }
     }
 }
