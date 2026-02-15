@@ -38,6 +38,7 @@
   "conv.loop_detected": "Bucle detectado. Deteniendo para evitar ejecución infinita.",
   "conv.api_error": "Error de API. Por favor, inténtalo de nuevo.",
   "conv.generic_failure": "Algo salió mal: el asistente interrumpió la ejecución y no produjo una respuesta. Intenta de nuevo; si el problema persiste, revisa los registros.",
+  "conv.round_info": "[Ronda {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "No se recibió respuesta de la API.",
   "conv.error": "Ocurrió un error durante el procesamiento.",

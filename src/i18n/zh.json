@@ -38,6 +38,7 @@
   "conv.loop_detected": "检测到循环。正在停止以防止无限执行。",
   "conv.api_error": "发生 API 错误。请重试。",
   "conv.generic_failure": "发生错误：助理中断了操作且未生成响应。请重试；如果问题持续存在，请检查日志。",
+  "conv.round_info": "[轮次 {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "未收到 API 响应。",
   "conv.error": "处理过程中发生错误。",

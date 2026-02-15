@@ -38,6 +38,7 @@
   "conv.loop_detected": "Loop detected. Stopping to prevent infinite execution.",
   "conv.api_error": "API error occurred. Please try again.",
   "conv.generic_failure": "Something went wrong — the assistant stopped without producing a response. Please try again; if the problem persists, check the logs.",
+  "conv.round_info": "[Round {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "No response received from the API.",
   "conv.error": "An error occurred during processing.",

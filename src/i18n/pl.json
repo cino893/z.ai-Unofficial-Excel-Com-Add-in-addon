@@ -38,6 +38,7 @@
   "conv.loop_detected": "Wykryto pętlę. Zatrzymywanie, aby zapobiec nieskończonemu wykonywaniu.",
   "conv.api_error": "Wystąpił błąd API. Spróbuj ponownie.",
   "conv.generic_failure": "Coś poszło nie tak — asystent przerwał działanie i nie wygenerował odpowiedzi. Spróbuj ponownie; jeśli problem będzie się powtarzał, sprawdź logi.",
+  "conv.round_info": "[Runda {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "Nie otrzymano odpowiedzi z API.",
   "conv.error": "Wystąpił błąd podczas przetwarzania.",

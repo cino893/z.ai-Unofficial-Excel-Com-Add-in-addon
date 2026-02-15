@@ -38,6 +38,7 @@
   "conv.loop_detected": "ループを検出しました。無限実行を防ぐため停止します。",
   "conv.api_error": "APIエラーが発生しました。もう一度お試しください。",
   "conv.generic_failure": "問題が発生しました — アシスタントが中断され、応答が生成されませんでした。もう一度お試しください。問題が続く場合はログを確認してください。",
+  "conv.round_info": "[ラウンド {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "APIから応答がありませんでした。",
   "conv.error": "処理中にエラーが発生しました。",

@@ -83,17 +83,20 @@ public class ConversationService
     {
         _isProcessing = true;
         _cts = new CancellationTokenSource();
-        LastStopReason = StopReason.None;
         try
         {
             if (_messages == null)
                 Init();
 
+            // Check before resetting — did we hit max rounds with a summary?
+            var useLastSummary = LastStopReason == StopReason.MaxRounds
+                && !string.IsNullOrWhiteSpace(_lastAssistantResponse);
+            LastStopReason = StopReason.None;
+
             // Build context summary from recent tool calls
             var recentContext = BuildRecentContext();
-            var continueTranslation = AddIn.I18n.T("conv.continue_prompt");
-            var useLastSummary = LastStopReason == StopReason.MaxRounds && !string.IsNullOrWhiteSpace(_lastAssistantResponse);
-            var continueMsg = useLastSummary ? _lastAssistantResponse : continueTranslation;
+            var continueMsg = useLastSummary ? _lastAssistantResponse
+                : AddIn.I18n.T("conv.continue_prompt");
             if (!useLastSummary && !string.IsNullOrEmpty(recentContext))
                 continueMsg += "\n\nLast completed actions:\n" + recentContext;
 
@@ -124,6 +127,7 @@ public class ConversationService
     {
         string? previousSignature = null;
         int repeatCount = 0;
+        int roundInfoIndex = -1; // Track the injected round-info message
 
         for (int round = 1; round <= MaxToolRounds; round++)
         {
@@ -136,17 +140,21 @@ public class ConversationService
 
             AddIn.Logger.Info($"Tool-calling loop round {round}/{MaxToolRounds}");
 
-            // Inject round info so the model knows its budget
+            // Replace (not accumulate) round info — always at end of messages
             var roundReplacements = new Dictionary<string, string>
             {
                 ["CurrentRound"] = round.ToString(),
                 ["MaxToolRounds"] = MaxToolRounds.ToString()
             };
-            _messages.Add(new JsonObject
+            var roundMsg = new JsonObject
             {
                 ["role"] = "system",
                 ["content"] = AddIn.I18n.T("conv.round_info", roundReplacements)
-            });
+            };
+            if (roundInfoIndex >= 0 && roundInfoIndex < _messages.Count)
+                _messages.RemoveAt(roundInfoIndex);
+            _messages.Add(roundMsg);
+            roundInfoIndex = _messages.Count - 1;
 
             if (round == MaxToolRounds)
             {
@@ -214,7 +222,6 @@ public class ConversationService
 
                     AddIn.Logger.Info($"Executing tool: {name}");
                     var result = toolExecutor(name, arguments);
-                    AddIn.Logger.ToolCall(name, arguments, result);
 
                     _messages.Add(new JsonObject
                     {
@@ -233,8 +240,10 @@ public class ConversationService
             {
                 LastStopReason = StopReason.Error;
                 AddIn.Logger.Error("Assistant returned empty response");
+                RemoveRoundInfo(roundInfoIndex);
                 return AddIn.I18n.T("conv.generic_failure");
             }
+            RemoveRoundInfo(roundInfoIndex);
             _messages.Add(new JsonObject
             {
                 ["role"] = "assistant",
@@ -247,9 +256,17 @@ public class ConversationService
             return content;
         }
 
+        RemoveRoundInfo(roundInfoIndex);
         AddIn.Logger.Warn($"Max tool rounds ({MaxToolRounds}) reached");
         LastStopReason = StopReason.MaxRounds;
         return AddIn.I18n.TFormat("conv.max_rounds", MaxToolRounds);
+    }
+
+    /// <summary>Remove the transient round-info system message from history.</summary>
+    private void RemoveRoundInfo(int index)
+    {
+        if (index >= 0 && index < _messages.Count)
+            _messages.RemoveAt(index);
     }
 
     /// <summary>Build a short summary of recent tool calls for context on continue.</summary>

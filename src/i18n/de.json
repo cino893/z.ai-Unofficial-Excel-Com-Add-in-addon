@@ -38,6 +38,7 @@
   "conv.loop_detected": "Schleife erkannt. Wird gestoppt, um Endlosausführung zu verhindern.",
   "conv.api_error": "API-Fehler aufgetreten. Bitte versuchen Sie es erneut.",
   "conv.generic_failure": "Etwas ist schiefgelaufen — der Assistent hat die Ausführung abgebrochen und keine Antwort geliefert. Bitte erneut versuchen; falls das Problem weiterhin besteht, überprüfe die Logs.",
+  "conv.round_info": "[Runde {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "Keine Antwort von der API erhalten.",
   "conv.error": "Bei der Verarbeitung ist ein Fehler aufgetreten.",

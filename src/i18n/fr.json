@@ -38,6 +38,7 @@
   "conv.loop_detected": "Boucle détectée. Arrêt pour éviter une exécution infinie.",
   "conv.api_error": "Erreur API survenue. Veuillez réessayer.",
   "conv.generic_failure": "Quelque chose a mal tourné — l'assistant a interrompu son exécution et n'a pas produit de réponse. Réessayez ; si le problème persiste, vérifiez les journaux.",
+  "conv.round_info": "[Tour {{CurrentRound}}/{{MaxToolRounds}}]",
 
   "conv.no_response": "Aucune réponse reçue de l'API.",
   "conv.error": "Une erreur est survenue lors du traitement.",
