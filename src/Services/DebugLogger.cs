@@ -63,14 +63,31 @@ public class DebugLogger
             var finish = "";
             var promptTokens = 0;
             var compTokens = 0;
+            var toolCallNames = "";
             if (root.TryGetProperty("choices", out var ch) && ch.GetArrayLength() > 0)
+            {
                 finish = ch[0].TryGetProperty("finish_reason", out var fr) ? fr.GetString() ?? "" : "";
+                // Extract tool call names for debugging
+                if (ch[0].TryGetProperty("message", out var msg) &&
+                    msg.TryGetProperty("tool_calls", out var tcs))
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    foreach (var tc in tcs.EnumerateArray())
+                    {
+                        if (tc.TryGetProperty("function", out var fn) &&
+                            fn.TryGetProperty("name", out var n))
+                            names.Add(n.GetString() ?? "?");
+                    }
+                    if (names.Count > 0)
+                        toolCallNames = $" tools=[{string.Join(",", names)}]";
+                }
+            }
             if (root.TryGetProperty("usage", out var u))
             {
                 if (u.TryGetProperty("prompt_tokens", out var pt)) promptTokens = pt.GetInt32();
                 if (u.TryGetProperty("completion_tokens", out var ct2)) compTokens = ct2.GetInt32();
             }
-            Log("API-RES", $"HTTP {status} finish={finish} tokens={promptTokens}+{compTokens}={promptTokens + compTokens}");
+            Log("API-RES", $"HTTP {status} finish={finish} tokens={promptTokens}+{compTokens}={promptTokens + compTokens}{toolCallNames}");
         }
         catch
         {

@@ -296,24 +296,21 @@ public partial class ExcelSkillService
             try
             {
                 var cacheInfo = new JsonArray();
-                foreach (dynamic cache in wb.PivotCaches())
-                {
-                    try
-                    {
-                        string sd = cache.SourceData?.ToString() ?? "";
-                        if (!string.IsNullOrEmpty(sd))
-                            cacheInfo.Add(sd);
-                    }
-                    catch { }
-                }
+                foreach (var src in GetPivotCacheSourcesA1(wb))
+                    cacheInfo.Add(src);
                 if (cacheInfo.Count > 0)
                     result["pivot_cache_sources"] = cacheInfo;
             }
             catch { }
 
+            // Build a clear hint with the actual data source range
+            var srcList = result["pivot_cache_sources"]?.AsArray();
+            string srcInfo = srcList != null && srcList.Count > 0
+                ? $" The pivot data source is: {srcList[0]}."
+                : "";
             result["hint"] = "PivotTable enumeration failed (COM type library issue, common with .xlsb files). " +
-                "Do NOT retry list_pivot_tables. To move a pivot, use read_range to find its location, " +
-                "then move_table with source_range parameter, or use create_pivot_table + clear_range.";
+                "Do NOT retry list_pivot_tables or move_table." + srcInfo +
+                " To recreate a pivot on another sheet: call create_pivot_table with the source data range and desired fields.";
         }
         return result.ToJsonString();
     }
@@ -400,6 +397,21 @@ public partial class ExcelSkillService
             catch { }
         }
 
+        // ---- Safety net: if PivotCaches exist but pivot wasn't found, it's a COM issue ----
+        if (foundPivot == null && !comTypeLibError)
+        {
+            try
+            {
+                int cacheCount = wb.PivotCaches().Count;
+                if (cacheCount > 0)
+                {
+                    comTypeLibError = true;
+                    AddIn.Logger.Debug($"move_table: PivotCaches.Count={cacheCount} but pivot not found — forcing COM error path");
+                }
+            }
+            catch { }
+        }
+
         AddIn.Logger.Debug($"move_table: name={sourceName}, range={sourceRange}, found={foundPivot != null}, comErr={comTypeLibError}");
 
         // ---- Determine destination sheet ----
@@ -479,7 +491,7 @@ public partial class ExcelSkillService
                             ["success"] = true,
                             ["moved"] = "pivot_recreated",
                             ["new_name"] = newName,
-                            ["source_data"] = sd,
+                            ["source_data"] = ConvertR1C1toA1(sd),
                             ["to_sheet"] = (string)destSheet.Name,
                             ["dest_cell"] = destCell,
                             ["warning"] = $"Pivot recreated from cache — field layout (row_fields, value_fields, column_fields) needs reconfiguration via create_pivot_table or manual setup.{clearNote}"
@@ -493,24 +505,17 @@ public partial class ExcelSkillService
                 AddIn.Logger.Debug($"move_table PivotCaches failed: 0x{ex.HResult:X}");
             }
 
-            // PivotCaches also failed — return actionable error
-            string cacheSourceHint = "";
-            try
-            {
-                foreach (dynamic c in wb.PivotCaches())
-                {
-                    try { cacheSourceHint = c.SourceData?.ToString() ?? ""; break; } catch { }
-                }
-            }
-            catch { }
+            // PivotCaches also failed — return actionable error with A1-format source
+            var cacheSources = GetPivotCacheSourcesA1(wb);
+            string srcHint = cacheSources.Count > 0 ? $" (source_range: {cacheSources[0]})" : "";
 
             return JsonSerializer.Serialize(new
             {
                 error = "Cannot move pivot table — COM type library error on this workbook (.xlsb issue).",
                 alternative_steps = new[]
                 {
-                    $"1. create_pivot_table on dest_sheet='{destSheetName ?? "new sheet"}' with same source data{(string.IsNullOrEmpty(cacheSourceHint) ? "" : $" (source: {cacheSourceHint})")} and field configuration",
-                    $"2. clear_range on sheet='{sourceSheet.Name}' to remove old pivot"
+                    $"1. create_pivot_table on dest_sheet='{destSheetName ?? "new sheet"}' with source data{srcHint} and desired row_fields/value_fields",
+                    $"2. clear_range on sheet='{sourceSheet.Name}' range covering the old pivot to remove it"
                 },
                 hint = "Do NOT retry move_table — use create_pivot_table + clear_range instead."
             });
@@ -553,5 +558,59 @@ public partial class ExcelSkillService
             });
 
         return JsonSerializer.Serialize(new { error = "Provide 'name' (pivot table name) or 'source_range' to move." });
+    }
+
+    /// <summary>Convert R1C1 reference (Polish W/K or English R/C) to A1 format. E.g. "Arkusz1!W1K1:W26K5" → "Arkusz1!A1:E26"</summary>
+    private static string ConvertR1C1toA1(string r1c1)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(r1c1,
+            @"^(.*!)?[WRwr](\d+)[KCkc](\d+)(?::?[WRwr](\d+)[KCkc](\d+))?$");
+        if (!match.Success) return r1c1; // can't parse — return as-is
+
+        string sheet = match.Groups[1].Value; // "Arkusz1!" or ""
+        int r1 = int.Parse(match.Groups[2].Value);
+        int c1 = int.Parse(match.Groups[3].Value);
+
+        string result = $"{sheet}{ColToLetter(c1)}{r1}";
+        if (match.Groups[4].Success)
+        {
+            int r2 = int.Parse(match.Groups[4].Value);
+            int c2 = int.Parse(match.Groups[5].Value);
+            result += $":{ColToLetter(c2)}{r2}";
+        }
+        return result;
+    }
+
+    private static string ColToLetter(int col)
+    {
+        string result = "";
+        while (col > 0)
+        {
+            col--;
+            result = (char)('A' + col % 26) + result;
+            col /= 26;
+        }
+        return result;
+    }
+
+    /// <summary>Get all PivotCache source data ranges in A1 format.</summary>
+    private static List<string> GetPivotCacheSourcesA1(dynamic wb)
+    {
+        var sources = new List<string>();
+        try
+        {
+            foreach (dynamic cache in wb.PivotCaches())
+            {
+                try
+                {
+                    string sd = cache.SourceData?.ToString() ?? "";
+                    if (!string.IsNullOrEmpty(sd))
+                        sources.Add(ConvertR1C1toA1(sd));
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return sources;
     }
 }
