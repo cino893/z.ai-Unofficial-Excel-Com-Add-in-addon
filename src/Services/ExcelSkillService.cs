@@ -147,6 +147,16 @@ public partial class ExcelSkillService
                 },
                 new JsonArray { "at_row" }),
 
+            MakeTool("delete_columns",
+                "Delete one or more columns from the worksheet",
+                new JsonObject
+                {
+                    ["start_column"] = PropString("First column letter to delete e.g. C"),
+                    ["count"] = PropNumber("Number of columns to delete (default: 1)"),
+                    ["sheet"] = PropString("Sheet name (optional)")
+                },
+                new JsonArray { "start_column" }),
+
             MakeTool("create_chart",
                 "Create a chart from data range. Use list_charts first to check existing charts, and delete_chart to remove old ones before creating new.",
                 new JsonObject
@@ -206,15 +216,51 @@ public partial class ExcelSkillService
                 },
                 new JsonArray { "source_range", "row_fields", "value_fields" }),
 
-            MakeTool("move_table",
-                "Move a data range or PivotTable to another sheet. For pivots: tries name lookup, then source_range cell access, then PivotCaches recreation. On .xlsb files prefer source_range over name. Use when a pivot table blocks delete_rows/insert_rows.",
+            MakeTool("move_pivot_table",
+                "Move a PivotTable to another sheet. Tries Location property, then recreates from PivotCache. On .xlsb files, recreated pivot is empty — use modify_pivot_table to configure fields afterward.",
                 new JsonObject
                 {
-                    ["name"] = PropString("PivotTable name to move (optional — on .xlsb files this may fail, prefer source_range)"),
-                    ["source_range"] = PropString("Source range e.g. H1:M30 — works for both data and pivot tables (recommended for .xlsb)"),
-                    ["dest_sheet"] = PropString("Destination sheet name (optional, creates new sheet if omitted)"),
+                    ["name"] = PropString("PivotTable name to move (use list_pivot_tables to find it)"),
+                    ["source_range"] = PropString("Range containing the pivot e.g. H1:M30 (alternative to name, recommended for .xlsb)"),
+                    ["dest_sheet"] = PropString("Destination sheet name (creates if not exists)"),
                     ["dest_cell"] = PropString("Destination cell e.g. A1 (default: A1)"),
-                    ["sheet"] = PropString("Source sheet name (optional, defaults to active)")
+                    ["sheet"] = PropString("Source sheet name (optional)")
+                },
+                new JsonArray()),
+
+            MakeTool("modify_pivot_table",
+                "Configure fields on an existing PivotTable: set row/column/value/page fields, change aggregation function, refresh. Use after create_pivot_table or move_pivot_table to set up field layout.",
+                new JsonObject
+                {
+                    ["name"] = PropString("PivotTable name (optional, defaults to first pivot on sheet)"),
+                    ["row_fields"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Fields for row labels e.g. [\"Category\",\"Region\"]",
+                        ["items"] = new JsonObject { ["type"] = "string" }
+                    },
+                    ["column_fields"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Fields for column labels (optional)",
+                        ["items"] = new JsonObject { ["type"] = "string" }
+                    },
+                    ["value_fields"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Fields to aggregate e.g. [\"Sales\"]",
+                        ["items"] = new JsonObject { ["type"] = "string" }
+                    },
+                    ["value_function"] = PropString("Aggregation: sum, count, average, max, min (default: sum)"),
+                    ["page_fields"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["description"] = "Fields for page/filter area (optional)",
+                        ["items"] = new JsonObject { ["type"] = "string" }
+                    },
+                    ["clear_fields"] = PropBool("Reset all field orientations before applying new ones (default: true)"),
+                    ["refresh"] = PropBool("Refresh the PivotTable after changes (default: false)"),
+                    ["sheet"] = PropString("Sheet name (optional)")
                 },
                 new JsonArray()),
 
@@ -389,11 +435,13 @@ public partial class ExcelSkillService
                 "add_sheet" => SkillAddSheet(args),
                 "delete_rows" => SkillDeleteRows(args),
                 "insert_rows" => SkillInsertRows(args),
+                "delete_columns" => SkillDeleteColumns(args),
                 "create_chart" => SkillCreateChart(args),
                 "delete_chart" => SkillDeleteChart(args),
                 "list_charts" => SkillListCharts(args),
                 "create_pivot_table" => SkillCreatePivotTable(args),
-                "move_table" => SkillMoveTable(args),
+                "move_pivot_table" => SkillMovePivotTable(args),
+                "modify_pivot_table" => SkillModifyPivotTable(args),
                 "auto_filter" => SkillAutoFilter(args),
                 "find_replace" => SkillFindReplace(args),
                 "conditional_format" => SkillConditionalFormat(args),
@@ -420,7 +468,7 @@ public partial class ExcelSkillService
                 ex.Message.Contains("tabela przestawna", StringComparison.OrdinalIgnoreCase) ||
                 ex.Message.Contains("PivotTable", StringComparison.OrdinalIgnoreCase))
             {
-                errorObj["hint"] = "A PivotTable is blocking this operation. Use move_table to relocate it to another sheet first, then retry.";
+                errorObj["hint"] = "A PivotTable is blocking this operation. Use move_pivot_table to relocate it to another sheet first, then retry.";
             }
             else if (ex.HResult == unchecked((int)0x800A03EC))
             {

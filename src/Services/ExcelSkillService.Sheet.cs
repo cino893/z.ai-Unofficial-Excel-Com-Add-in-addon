@@ -75,6 +75,40 @@ public partial class ExcelSkillService
         return result.ToJsonString();
     }
 
+    // --- delete_columns ---
+    private string SkillDeleteColumns(JsonNode args)
+    {
+        dynamic ws = GetTargetSheet(args);
+        string startCol = Str(args["start_column"]).ToUpperInvariant();
+        int count = Int(args["count"], 1);
+
+        if (string.IsNullOrEmpty(startCol))
+            return JsonSerializer.Serialize(new { error = "start_column is required (e.g. 'C')" });
+        if (count < 1) count = 1;
+
+        // Convert column letter to number, then compute end column
+        int startColNum = 0;
+        foreach (char c in startCol)
+            startColNum = startColNum * 26 + (c - 'A' + 1);
+        int endColNum = startColNum + count - 1;
+
+        // Convert back to letter
+        string endCol = "";
+        int n = endColNum;
+        while (n > 0) { n--; endCol = (char)('A' + n % 26) + endCol; n /= 26; }
+
+        ws.Columns[$"{startCol}:{endCol}"].Delete();
+
+        var result = new JsonObject
+        {
+            ["success"] = true,
+            ["deleted_from"] = startCol,
+            ["deleted_to"] = endCol,
+            ["count"] = count
+        };
+        return result.ToJsonString();
+    }
+
     // --- rename_sheet ---
     private string SkillRenameSheet(JsonNode args)
     {
