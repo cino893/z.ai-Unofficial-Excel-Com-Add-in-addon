@@ -70,17 +70,64 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
     private void SetProcessing(bool processing)
     {
         _isProcessing = processing;
-        btnSend.IsEnabled = !processing;
+        btnSend.Visibility = processing ? Visibility.Collapsed : Visibility.Visible;
+        btnStop.Visibility = processing ? Visibility.Visible : Visibility.Collapsed;
         txtInput.IsEnabled = !processing;
         typingIndicator.Visibility = processing ? Visibility.Visible : Visibility.Collapsed;
         lblStatus.Text = processing
             ? AddIn.I18n.T("chat.processing")
             : AddIn.I18n.TFormat("chat.ready_count", _messages.Count);
+
+        // Show/hide Continue button based on stop reason
+        if (!processing)
+            UpdateContinueButton();
+    }
+
+    private void UpdateContinueButton()
+    {
+        var canContinue = AddIn.Conversation.CanContinue;
+        btnContinue.Visibility = canContinue ? Visibility.Visible : Visibility.Collapsed;
+        if (canContinue)
+            btnContinue.Content = "▶ " + AddIn.I18n.T("chat.continue");
     }
 
     private async void OnSendClick(object sender, RoutedEventArgs e)
     {
         await SendMessage();
+    }
+
+    private void OnStopClick(object sender, RoutedEventArgs e)
+    {
+        AddIn.Conversation.Cancel();
+    }
+
+    private async void OnContinueClick(object sender, RoutedEventArgs e)
+    {
+        if (_isProcessing) return;
+
+        btnContinue.Visibility = Visibility.Collapsed;
+        AddMessage("info", AddIn.I18n.T("chat.continuing"));
+        SetProcessing(true);
+
+        try
+        {
+            var response = await Task.Run(() =>
+            {
+                return AddIn.Conversation.Continue(ExecuteToolOnMainThread);
+            });
+
+            if (!string.IsNullOrEmpty(response))
+                AddMessage("assistant", response);
+        }
+        catch (Exception ex)
+        {
+            AddIn.Logger.Error($"Continue error: {ex.Message}");
+            AddMessage("info", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            SetProcessing(false);
+        }
     }
 
     private void OnInputKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -143,6 +190,7 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
     {
         _messages.Clear();
         AddIn.Conversation.Init();
+        btnContinue.Visibility = Visibility.Collapsed;
         AddMessage("info", AddIn.I18n.T("chat.new_started"));
         lblStatus.Text = AddIn.I18n.T("chat.ready");
     }

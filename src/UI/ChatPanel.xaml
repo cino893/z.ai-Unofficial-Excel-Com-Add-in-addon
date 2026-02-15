@@ -244,11 +244,48 @@
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
+                        <!-- Stop button (visible during processing) -->
+                        <Button Grid.Column="1" x:Name="btnStop" Content="■"
+                                Width="36" Height="36" FontSize="14"
+                                Foreground="White" Cursor="Hand" Margin="4"
+                                Visibility="Collapsed" Click="OnStopClick">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="18"
+                                            Background="#DC2626">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
                     </Grid>
                 </Border>
 
                 <!-- Action buttons -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button x:Name="btnContinue" Content="▶ Continue" Margin="4,0"
+                            FontSize="11" Foreground="White" Visibility="Collapsed"
+                            Cursor="Hand" Click="OnContinueClick">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" CornerRadius="12" Padding="10,4"
+                                        Background="#217346">
+                                    <ContentPresenter HorizontalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                     <Button x:Name="btnNewConv" Content="🗨 New" Margin="4,0"
                             FontSize="11" Foreground="#217346" Background="Transparent"
                             BorderBrush="#217346" BorderThickness="1" Padding="10,4"

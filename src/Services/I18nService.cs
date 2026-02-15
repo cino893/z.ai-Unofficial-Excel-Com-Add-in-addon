@@ -162,12 +162,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Round {0}",
             ["conv.status_exec"] = "Executing tool: {0}",
-            ["conv.max_rounds"] = "Maximum rounds reached ({0}). Stopping.",
+            ["conv.max_rounds"] = "⚠️ Maximum tool rounds reached ({0}). Press Continue to resume.",
             ["conv.loop_detected"] = "Loop detected. Stopping to prevent infinite execution.",
             ["conv.api_error"] = "API error occurred. Please try again.",
             ["conv.no_response"] = "No response received from the API.",
             ["conv.error"] = "An error occurred during processing.",
             ["conv.no_assistant"] = "No assistant response in API reply.",
+            ["conv.cancelled"] = "⏹ Execution stopped by user.",
+            ["conv.continue_prompt"] = "Please continue where you left off. Complete the remaining steps.",
+            ["chat.stop"] = "Stop",
+            ["chat.continue"] = "Continue",
+            ["chat.continuing"] = "Continuing execution...",
 
             // Debug
             ["debug.no_log"] = "No log entries.",
@@ -233,12 +238,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Runda {0}",
             ["conv.status_exec"] = "Wykonywanie narzędzia: {0}",
-            ["conv.max_rounds"] = "Osiągnięto maksymalną liczbę rund ({0}). Zatrzymywanie.",
+            ["conv.max_rounds"] = "⚠️ Osiągnięto maksymalną liczbę rund ({0}). Naciśnij Kontynuuj, aby wznowić.",
             ["conv.loop_detected"] = "Wykryto pętlę. Zatrzymywanie, aby zapobiec nieskończonemu wykonywaniu.",
             ["conv.api_error"] = "Wystąpił błąd API. Spróbuj ponownie.",
             ["conv.no_response"] = "Nie otrzymano odpowiedzi z API.",
             ["conv.error"] = "Wystąpił błąd podczas przetwarzania.",
             ["conv.no_assistant"] = "Brak odpowiedzi asystenta w odpowiedzi API.",
+            ["conv.cancelled"] = "⏹ Wykonywanie zatrzymane przez użytkownika.",
+            ["conv.continue_prompt"] = "Kontynuuj od miejsca, w którym skończyłeś. Dokończ pozostałe kroki.",
+            ["chat.stop"] = "Stop",
+            ["chat.continue"] = "Kontynuuj",
+            ["chat.continuing"] = "Wznawianie wykonywania...",
 
             // Debug
             ["debug.no_log"] = "Brak wpisów w logu.",
@@ -304,12 +314,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Runde {0}",
             ["conv.status_exec"] = "Werkzeug wird ausgeführt: {0}",
-            ["conv.max_rounds"] = "Maximale Rundenanzahl erreicht ({0}). Wird gestoppt.",
+            ["conv.max_rounds"] = "⚠️ Maximale Rundenanzahl erreicht ({0}). Drücken Sie Fortsetzen, um fortzufahren.",
             ["conv.loop_detected"] = "Schleife erkannt. Wird gestoppt, um Endlosausführung zu verhindern.",
             ["conv.api_error"] = "API-Fehler aufgetreten. Bitte versuchen Sie es erneut.",
             ["conv.no_response"] = "Keine Antwort von der API erhalten.",
             ["conv.error"] = "Bei der Verarbeitung ist ein Fehler aufgetreten.",
             ["conv.no_assistant"] = "Keine Assistenten-Antwort in der API-Antwort.",
+            ["conv.cancelled"] = "⏹ Ausführung vom Benutzer gestoppt.",
+            ["conv.continue_prompt"] = "Bitte fahren Sie dort fort, wo Sie aufgehört haben. Schließen Sie die verbleibenden Schritte ab.",
+            ["chat.stop"] = "Stopp",
+            ["chat.continue"] = "Fortsetzen",
+            ["chat.continuing"] = "Ausführung wird fortgesetzt...",
 
             // Debug
             ["debug.no_log"] = "Keine Log-Einträge.",
@@ -375,12 +390,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Tour {0}",
             ["conv.status_exec"] = "Exécution de l'outil : {0}",
-            ["conv.max_rounds"] = "Nombre maximum de tours atteint ({0}). Arrêt en cours.",
+            ["conv.max_rounds"] = "⚠️ Nombre maximum de tours atteint ({0}). Appuyez sur Continuer pour reprendre.",
             ["conv.loop_detected"] = "Boucle détectée. Arrêt pour éviter une exécution infinie.",
             ["conv.api_error"] = "Erreur API survenue. Veuillez réessayer.",
             ["conv.no_response"] = "Aucune réponse reçue de l'API.",
             ["conv.error"] = "Une erreur est survenue lors du traitement.",
             ["conv.no_assistant"] = "Pas de réponse de l'assistant dans la réponse API.",
+            ["conv.cancelled"] = "⏹ Exécution arrêtée par l'utilisateur.",
+            ["conv.continue_prompt"] = "Veuillez continuer là où vous vous êtes arrêté. Complétez les étapes restantes.",
+            ["chat.stop"] = "Arrêter",
+            ["chat.continue"] = "Continuer",
+            ["chat.continuing"] = "Reprise de l'exécution...",
 
             // Debug
             ["debug.no_log"] = "Aucune entrée dans le journal.",
@@ -446,12 +466,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Ronda {0}",
             ["conv.status_exec"] = "Ejecutando herramienta: {0}",
-            ["conv.max_rounds"] = "Número máximo de rondas alcanzado ({0}). Deteniendo.",
+            ["conv.max_rounds"] = "⚠️ Número máximo de rondas alcanzado ({0}). Presiona Continuar para reanudar.",
             ["conv.loop_detected"] = "Bucle detectado. Deteniendo para evitar ejecución infinita.",
             ["conv.api_error"] = "Error de API. Por favor, inténtalo de nuevo.",
             ["conv.no_response"] = "No se recibió respuesta de la API.",
             ["conv.error"] = "Ocurrió un error durante el procesamiento.",
             ["conv.no_assistant"] = "Sin respuesta del asistente en la respuesta de la API.",
+            ["conv.cancelled"] = "⏹ Ejecución detenida por el usuario.",
+            ["conv.continue_prompt"] = "Por favor, continúa donde lo dejaste. Completa los pasos restantes.",
+            ["chat.stop"] = "Detener",
+            ["chat.continue"] = "Continuar",
+            ["chat.continuing"] = "Reanudando ejecución...",
 
             // Debug
             ["debug.no_log"] = "No hay entradas en el registro.",
@@ -517,12 +542,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "Раунд {0}",
             ["conv.status_exec"] = "Виконання інструменту: {0}",
-            ["conv.max_rounds"] = "Досягнуто максимальну кількість раундів ({0}). Зупинка.",
+            ["conv.max_rounds"] = "⚠️ Досягнуто максимальну кількість раундів ({0}). Натисніть Продовжити для відновлення.",
             ["conv.loop_detected"] = "Виявлено цикл. Зупинка для запобігання нескінченному виконанню.",
             ["conv.api_error"] = "Помилка API. Будь ласка, спробуйте ще раз.",
             ["conv.no_response"] = "Відповідь від API не отримано.",
             ["conv.error"] = "Під час обробки сталася помилка.",
             ["conv.no_assistant"] = "Відповідь асистента відсутня у відповіді API.",
+            ["conv.cancelled"] = "⏹ Виконання зупинено користувачем.",
+            ["conv.continue_prompt"] = "Будь ласка, продовжуйте з того місця, де зупинилися. Завершіть решту кроків.",
+            ["chat.stop"] = "Зупинити",
+            ["chat.continue"] = "Продовжити",
+            ["chat.continuing"] = "Відновлення виконання...",
 
             // Debug
             ["debug.no_log"] = "Записів у журналі немає.",
@@ -588,12 +618,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "第 {0} 轮",
             ["conv.status_exec"] = "正在执行工具：{0}",
-            ["conv.max_rounds"] = "已达到最大轮次（{0}）。正在停止。",
+            ["conv.max_rounds"] = "⚠️ 已达到最大轮次（{0}）。按继续以恢复执行。",
             ["conv.loop_detected"] = "检测到循环。正在停止以防止无限执行。",
             ["conv.api_error"] = "发生 API 错误。请重试。",
             ["conv.no_response"] = "未收到 API 响应。",
             ["conv.error"] = "处理过程中发生错误。",
             ["conv.no_assistant"] = "API 响应中没有助手回复。",
+            ["conv.cancelled"] = "⏹ 用户已停止执行。",
+            ["conv.continue_prompt"] = "请从上次停止的地方继续。完成剩余步骤。",
+            ["chat.stop"] = "停止",
+            ["chat.continue"] = "继续",
+            ["chat.continuing"] = "正在恢复执行...",
 
             // Debug
             ["debug.no_log"] = "没有日志记录。",
@@ -659,12 +694,17 @@ public class I18nService
             // Conversation
             ["conv.status_round"] = "ラウンド {0}",
             ["conv.status_exec"] = "ツール実行中：{0}",
-            ["conv.max_rounds"] = "最大ラウンド数に達しました（{0}）。停止します。",
+            ["conv.max_rounds"] = "⚠️ 最大ラウンド数に達しました（{0}）。続行を押して再開してください。",
             ["conv.loop_detected"] = "ループを検出しました。無限実行を防ぐため停止します。",
             ["conv.api_error"] = "APIエラーが発生しました。もう一度お試しください。",
             ["conv.no_response"] = "APIから応答がありませんでした。",
             ["conv.error"] = "処理中にエラーが発生しました。",
             ["conv.no_assistant"] = "APIレスポンスにアシスタントの応答がありません。",
+            ["conv.cancelled"] = "⏹ ユーザーにより実行が停止されました。",
+            ["conv.continue_prompt"] = "中断したところから続けてください。残りのステップを完了してください。",
+            ["chat.stop"] = "停止",
+            ["chat.continue"] = "続行",
+            ["chat.continuing"] = "実行を再開しています...",
 
             // Debug
             ["debug.no_log"] = "ログエントリがありません。",
