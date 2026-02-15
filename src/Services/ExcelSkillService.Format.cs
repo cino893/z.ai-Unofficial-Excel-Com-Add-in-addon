@@ -190,7 +190,7 @@ public partial class ExcelSkillService
                 string tbDir = Str(args["operator"], "top").ToLowerInvariant();
                 dynamic tbRule = rng.FormatConditions.AddTop10();
                 tbRule.TopBottom = (tbDir == "bottom") ? 0 : 1; // 0=xlTop10Bottom, 1=xlTop10Top
-                tbRule.Rank = int.Parse(tbVal);
+                tbRule.Rank = int.TryParse(tbVal, out var tbRank) ? Math.Clamp(tbRank, 1, 100) : 10;
                 if (args["format_color"] != null)
                     tbRule.Interior.Color = Int(args["format_color"]);
                 break;

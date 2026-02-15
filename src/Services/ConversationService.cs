@@ -130,7 +130,9 @@ public class ConversationService
     private string RunToolLoop(Func<string, string, string> toolExecutor)
     {
         string? previousSignature = null;
+        string? previousToolNames = null;
         int repeatCount = 0;
+        int nameRepeatCount = 0;
         int roundInfoIndex = -1;
         int finalPromptIndex = -1;
 
@@ -207,38 +209,63 @@ public class ConversationService
 
                 var toolCalls = ZaiApiService.GetToolCalls(data)!;
 
-                // Build signature for loop detection
+                // Build signature for loop detection (exact args match)
                 var signature = string.Join("|", toolCalls.Select(tc =>
                     $"{tc!["function"]!["name"]!.GetValue<string>()}:" +
                     $"{tc["function"]!["arguments"]!.GetValue<string>()}"));
+
+                // Build tool-names-only signature (catches alternating args like list_pivot_tables({}) vs ({"sheet":"X"}))
+                var toolNames = string.Join("|", toolCalls
+                    .Select(tc => tc!["function"]!["name"]!.GetValue<string>())
+                    .OrderBy(n => n));
+
+                bool isLoop = false;
 
                 if (signature == previousSignature)
                 {
                     repeatCount++;
                     AddIn.Logger.Warn($"Same tool signature repeated ({repeatCount}/{MaxSameToolRepeats})");
-                    if (repeatCount >= MaxSameToolRepeats)
-                    {
-                        AddIn.Logger.Warn("Tool loop detected, breaking out");
-                        // Add dummy results for orphaned tool_calls
-                        foreach (var tc in toolCalls)
-                        {
-                            _messages.Add(new JsonObject
-                            {
-                                ["role"] = "tool",
-                                ["content"] = "{\"error\":\"Loop detected, execution stopped\"}",
-                                ["tool_call_id"] = tc!["id"]!.GetValue<string>()
-                            });
-                        }
-                        LastStopReason = StopReason.LoopDetected;
-                        RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
-                        return AddIn.I18n.T("conv.loop_detected");
-                    }
+                    if (repeatCount >= MaxSameToolRepeats) isLoop = true;
                 }
                 else
                 {
                     repeatCount = 0;
                 }
                 previousSignature = signature;
+
+                // Name-level detection: same tool names called 3+ times regardless of args
+                if (toolNames == previousToolNames)
+                {
+                    nameRepeatCount++;
+                    if (nameRepeatCount >= MaxSameToolRepeats + 1)
+                    {
+                        AddIn.Logger.Warn($"Same tool names repeated {nameRepeatCount} times");
+                        isLoop = true;
+                    }
+                }
+                else
+                {
+                    nameRepeatCount = 0;
+                }
+                previousToolNames = toolNames;
+
+                if (isLoop)
+                {
+                    AddIn.Logger.Warn("Tool loop detected, breaking out");
+                    // Add dummy results for orphaned tool_calls
+                    foreach (var tc in toolCalls)
+                    {
+                        _messages.Add(new JsonObject
+                        {
+                            ["role"] = "tool",
+                            ["content"] = "{\"error\":\"Loop detected, execution stopped\"}",
+                            ["tool_call_id"] = tc!["id"]!.GetValue<string>()
+                        });
+                    }
+                    LastStopReason = StopReason.LoopDetected;
+                    RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
+                    return AddIn.I18n.T("conv.loop_detected");
+                }
 
                 foreach (var toolCall in toolCalls)
                 {

@@ -13,16 +13,21 @@ public partial class ExcelSkillService
         string name = Str(args["name"]);
 
         dynamic ws = app.ActiveWorkbook.Worksheets.Add();
+        string actualName = (string)ws.Name;
+        bool renamed = false;
         if (!string.IsNullOrEmpty(name))
         {
-            try { ws.Name = name; } catch { /* ignore rename failures */ }
+            try { ws.Name = name; actualName = name; renamed = true; }
+            catch { /* name may be duplicate or invalid */ }
         }
 
         var result = new JsonObject
         {
             ["success"] = true,
-            ["name"] = (string)ws.Name
+            ["name"] = actualName
         };
+        if (!string.IsNullOrEmpty(name) && !renamed)
+            result["warning"] = $"Could not rename sheet to '{name}' (duplicate or invalid name). Created as '{actualName}'.";
         return result.ToJsonString();
     }
 

@@ -249,6 +249,7 @@ public partial class ExcelSkillService
         var sheetFilter = args["sheet"]?.GetValue<string>();
 
         var pivots = new JsonArray();
+        var errors = new JsonArray();
         foreach (dynamic ws in wb.Worksheets)
         {
             string wsName = ws.Name;
@@ -274,22 +275,25 @@ public partial class ExcelSkillService
                     });
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                // PivotTables() can throw TYPE_E_INVDATAREAD on some sheets
-                pivots.Add(new JsonObject
-                {
-                    ["sheet"] = wsName,
-                    ["error"] = $"Cannot enumerate pivot tables on this sheet: {ex.Message}"
-                });
+                // PivotTables() can throw TYPE_E_INVDATAREAD on some workbooks
+                errors.Add(wsName);
             }
         }
 
-        return new JsonObject
+        var result = new JsonObject
         {
             ["pivot_tables"] = pivots,
             ["count"] = pivots.Count
-        }.ToJsonString();
+        };
+        if (errors.Count > 0)
+        {
+            result["errors"] = errors;
+            result["hint"] = "PivotTable enumeration failed on some sheets (COM type library issue). " +
+                "Creating new pivot tables may still work. Do NOT retry list_pivot_tables — it will fail the same way.";
+        }
+        return result.ToJsonString();
     }
 
     // --- move_table ---

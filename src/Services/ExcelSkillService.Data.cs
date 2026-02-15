@@ -114,13 +114,18 @@ public partial class ExcelSkillService
     {
         dynamic ws = GetTargetSheet(args);
         string startCell = Str(args["start_cell"]);
-        var data = args["data"]!.AsArray();
+        var dataNode = args["data"];
+        if (dataNode == null)
+            return JsonSerializer.Serialize(new { error = "Missing 'data' parameter" });
+        var data = dataNode.AsArray();
 
         int rows = data.Count;
         if (rows == 0)
             return new JsonObject { ["success"] = true, ["start_cell"] = startCell, ["rows_written"] = 0 }.ToJsonString();
 
-        int cols = data[0]!.AsArray().Count;
+        int cols = data[0]?.AsArray()?.Count ?? 0;
+        if (cols == 0)
+            return new JsonObject { ["success"] = true, ["start_cell"] = startCell, ["rows_written"] = 0 }.ToJsonString();
 
         // Build 2D object array for bulk write (single COM call)
         var values = new object?[rows, cols];
@@ -202,8 +207,8 @@ public partial class ExcelSkillService
 
         // Quick presence flags — saves the model from calling list_charts/list_pivot_tables just to check
         bool hasCharts = false;
-        bool hasPivots = false;
         bool hasFilters = false;
+        bool? hasPivots = null; // null = check failed (COM error)
         try { hasCharts = ws.ChartObjects.Count > 0; } catch { }
         try { hasPivots = ws.PivotTables().Count > 0; } catch { }
         try { hasFilters = (bool)ws.AutoFilterMode; } catch { }
@@ -220,7 +225,7 @@ public partial class ExcelSkillService
             ["headers"] = headers,
             ["sample_data"] = sample,
             ["has_charts"] = hasCharts,
-            ["has_pivot_tables"] = hasPivots,
+            ["has_pivot_tables"] = hasPivots.HasValue ? (JsonNode)JsonValue.Create(hasPivots.Value) : "unknown",
             ["has_filters"] = hasFilters
         };
         return result.ToJsonString();
