@@ -192,6 +192,14 @@ public partial class ExcelSkillService
             }
         }
 
+        // Quick presence flags — saves the model from calling list_charts/list_pivot_tables just to check
+        bool hasCharts = false;
+        bool hasPivots = false;
+        bool hasFilters = false;
+        try { hasCharts = ws.ChartObjects.Count > 0; } catch { }
+        try { hasPivots = ws.PivotTables().Count > 0; } catch { }
+        try { hasFilters = (bool)ws.AutoFilterMode; } catch { }
+
         var result = new JsonObject
         {
             ["name"] = (string)ws.Name,
@@ -202,7 +210,10 @@ public partial class ExcelSkillService
             ["first_cell"] = (string)usedRng.Cells[1, 1].Address,
             ["last_cell"] = (string)usedRng.Cells[usedRows, usedCols].Address,
             ["headers"] = headers,
-            ["sample_data"] = sample
+            ["sample_data"] = sample,
+            ["has_charts"] = hasCharts,
+            ["has_pivot_tables"] = hasPivots,
+            ["has_filters"] = hasFilters
         };
         return result.ToJsonString();
     }

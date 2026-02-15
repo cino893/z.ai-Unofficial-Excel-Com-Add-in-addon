@@ -55,6 +55,8 @@ public class ConversationService
             if (_messages == null)
                 Init();
 
+            TrimOldTurns();
+
             _messages!.Add(new JsonObject
             {
                 ["role"] = "user",
@@ -87,6 +89,8 @@ public class ConversationService
         {
             if (_messages == null)
                 Init();
+
+            TrimOldTurns();
 
             // Check before resetting — did we hit max rounds with a summary?
             var useLastSummary = LastStopReason == StopReason.MaxRounds
@@ -183,7 +187,18 @@ public class ConversationService
             }
 
             var finishReason = ZaiApiService.GetFinishReason(data);
-            AddIn.Logger.Info($"Finish reason: {finishReason}");
+            // Log token usage for cost monitoring
+            var usage = data["usage"];
+            if (usage != null)
+            {
+                var prompt = usage["prompt_tokens"]?.GetValue<int>() ?? 0;
+                var completion = usage["completion_tokens"]?.GetValue<int>() ?? 0;
+                AddIn.Logger.Info($"Round {round}: finish={finishReason}, tokens={prompt}+{completion}={prompt + completion}");
+            }
+            else
+            {
+                AddIn.Logger.Info($"Finish reason: {finishReason}");
+            }
 
             if (ZaiApiService.HasToolCalls(data))
             {
@@ -340,5 +355,42 @@ public class ConversationService
 
         lines.Reverse();
         return string.Join("\n", lines);
+    }
+
+    /// <summary>
+    /// Remove oldest conversation turns when message history gets too long.
+    /// Preserves system prompt (index 0) and the most recent turns.
+    /// Removes complete turns (user → assistant → tools → ... → next user) to keep API happy.
+    /// </summary>
+    private void TrimOldTurns()
+    {
+        const int softLimit = 80;
+        if (_messages == null || _messages.Count <= softLimit) return;
+
+        // Find all user message indices (skip system prompt at 0)
+        var userIndices = new List<int>();
+        for (int i = 1; i < _messages.Count; i++)
+        {
+            if (_messages[i]?.AsObject()?["role"]?.GetValue<string>() == "user")
+                userIndices.Add(i);
+        }
+
+        // Need at least 2 turns to trim (always keep the latest turn)
+        while (_messages.Count > softLimit && userIndices.Count >= 2)
+        {
+            int from = userIndices[0];
+            int to = userIndices[1];
+            int count = to - from;
+
+            for (int i = 0; i < count; i++)
+                _messages.RemoveAt(from);
+
+            int trimmed = count;
+            userIndices.RemoveAt(0);
+            for (int i = 0; i < userIndices.Count; i++)
+                userIndices[i] -= trimmed;
+
+            AddIn.Logger.Info($"Trimmed {trimmed} old messages, history now: {_messages.Count}");
+        }
     }
 }

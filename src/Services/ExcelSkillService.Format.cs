@@ -195,6 +195,17 @@ public partial class ExcelSkillService
                     tbRule.Interior.Color = Int(args["format_color"]);
                 break;
 
+            case "formula":
+                string fml = Str(args["value1"]);
+                if (!fml.StartsWith('=')) fml = "=" + fml;
+                // xlExpression = 2
+                dynamic fmlaRule = rng.FormatConditions.Add(Type: 2, Formula1: fml);
+                if (args["format_color"] != null)
+                    fmlaRule.Interior.Color = Int(args["format_color"]);
+                if (args["font_color"] != null)
+                    fmlaRule.Font.Color = Int(args["font_color"]);
+                break;
+
             case "cell_value":
             default:
                 string opStr = Str(args["operator"], "greater").ToLowerInvariant();

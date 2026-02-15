@@ -41,7 +41,7 @@ public partial class ExcelSkillService
                 new JsonArray { "range" }),
 
             MakeTool("write_range",
-                "Write a 2D array of values starting from a cell",
+                "Write a 2D array of values starting from a cell. PREFERRED over multiple write_cell calls for bulk data.",
                 new JsonObject
                 {
                     ["start_cell"] = PropString("Top-left cell to start writing e.g. A1"),
@@ -60,7 +60,7 @@ public partial class ExcelSkillService
                 new JsonArray { "start_cell", "data" }),
 
             MakeTool("get_sheet_info",
-                "Get information about a worksheet: name, used range, dimensions, headers (first row)",
+                "Get worksheet info: name, used range, dimensions, headers, data sample (first 5 rows), and flags for charts/pivot tables/filters",
                 new JsonObject
                 {
                     ["sheet"] = PropString("Sheet name (optional, defaults to active sheet)")
@@ -245,13 +245,13 @@ public partial class ExcelSkillService
                 new JsonArray { "find", "replace" }),
 
             MakeTool("conditional_format",
-                "Add conditional formatting to a range. Supports color scale, data bars, icon sets, and value-based rules.",
+                "Add conditional formatting to a range. Supports color scale, data bars, icon sets, formula-based rules, and value-based rules.",
                 new JsonObject
                 {
                     ["range"] = PropString("Range to format e.g. B2:B100"),
-                    ["rule_type"] = PropString("Rule type: color_scale, data_bars, icon_set, cell_value, top_bottom, above_average, duplicate, unique"),
+                    ["rule_type"] = PropString("Rule type: color_scale, data_bars, icon_set, cell_value, formula, top_bottom, above_average, duplicate, unique. Use 'formula' for alternating row colors (=MOD(ROW(),2)=0), row highlighting, date comparisons."),
                     ["operator"] = PropString("For cell_value: greater, less, equal, between, not_between, greater_equal, less_equal. For top_bottom: top or bottom (default: top)"),
-                    ["value1"] = PropString("Threshold value or formula (for cell_value/top_bottom rules)"),
+                    ["value1"] = PropString("Threshold value, or Excel formula for rule_type=formula (e.g. =MOD(ROW(),2)=0)"),
                     ["value2"] = PropString("Second value (for between/not_between operator)"),
                     ["format_color"] = PropNumber("Fill color as RGB long for matching cells (e.g. 65280 for green)"),
                     ["font_color"] = PropNumber("Font color as RGB long for matching cells"),
@@ -396,7 +396,26 @@ public partial class ExcelSkillService
         }
         catch (Exception ex)
         {
-            var error = JsonSerializer.Serialize(new { error = ex.Message });
+            var errorObj = new JsonObject { ["error"] = ex.Message };
+
+            // Contextual hints for common COM errors
+            if (ex.Message.Contains("pivot", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("tabela przestawna", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("PivotTable", StringComparison.OrdinalIgnoreCase))
+            {
+                errorObj["hint"] = "A PivotTable is blocking this operation. Use move_table to relocate it to another sheet first, then retry.";
+            }
+            else if (ex.HResult == unchecked((int)0x800A03EC))
+            {
+                errorObj["hint"] = "COM error — the range may be invalid, protected, or overlap an existing object. Check the range address and try again.";
+            }
+            else if (ex.Message.Contains("merge", StringComparison.OrdinalIgnoreCase) ||
+                     ex.Message.Contains("scal", StringComparison.OrdinalIgnoreCase))
+            {
+                errorObj["hint"] = "Merged cells may be interfering. Try clear_range with what='formats' first, or work with a different range.";
+            }
+
+            var error = errorObj.ToJsonString();
             AddIn.Logger.ToolCall(toolName, argsJson, error);
             return error;
         }
