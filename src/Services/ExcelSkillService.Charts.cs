@@ -147,7 +147,20 @@ public partial class ExcelSkillService
         dynamic destRange;
         if (string.IsNullOrEmpty(destCell))
         {
-            destSheet = wb.Worksheets.Add();
+            var destSheetName = Str(args["dest_sheet"]);
+            if (!string.IsNullOrEmpty(destSheetName))
+            {
+                try { destSheet = wb.Worksheets[destSheetName]; }
+                catch
+                {
+                    destSheet = wb.Worksheets.Add();
+                    destSheet.Name = destSheetName;
+                }
+            }
+            else
+            {
+                destSheet = wb.Worksheets.Add();
+            }
             destRange = destSheet.Range["A3"];
         }
         else
@@ -261,9 +274,14 @@ public partial class ExcelSkillService
                     });
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // PivotTables() can throw TYPE_E_INVDATAREAD on some sheets — skip gracefully
+                // PivotTables() can throw TYPE_E_INVDATAREAD on some sheets
+                pivots.Add(new JsonObject
+                {
+                    ["sheet"] = wsName,
+                    ["error"] = $"Cannot enumerate pivot tables on this sheet: {ex.Message}"
+                });
             }
         }
 

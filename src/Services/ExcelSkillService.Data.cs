@@ -129,7 +129,15 @@ public partial class ExcelSkillService
             var rowData = data[r]!.AsArray();
             for (int c = 0; c < Math.Min(rowData.Count, cols); c++)
             {
-                values[r, c] = rowData[c]?.GetValue<string>() ?? "";
+                var node = rowData[c];
+                if (node == null) { values[r, c] = ""; continue; }
+                // Handle mixed types: numbers stay numeric, rest → string
+                if (node is JsonValue jv)
+                {
+                    if (jv.TryGetValue<double>(out var d)) { values[r, c] = d; continue; }
+                    if (jv.TryGetValue<bool>(out var b)) { values[r, c] = b; continue; }
+                }
+                values[r, c] = node.ToString();
             }
         }
 
