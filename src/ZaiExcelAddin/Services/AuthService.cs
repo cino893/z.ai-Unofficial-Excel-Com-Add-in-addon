@@ -96,74 +96,12 @@ public class AuthService
         var i18n = AddIn.I18n;
         var current = LoadApiKey();
 
-        using var dlg = new Form
-        {
-            Text = i18n.T("auth.login_title"),
-            Size = new Size(420, 250),
-            StartPosition = FormStartPosition.CenterScreen,
-            FormBorderStyle = FormBorderStyle.FixedDialog,
-            MaximizeBox = false, MinimizeBox = false,
-            BackColor = Color.White,
-            Font = new Font("Segoe UI", 9.5f)
-        };
+        var dlg = new UI.WpfLoginDialog();
+        dlg.SetCurrentKey(current);
 
-        var lbl = new Label
-        {
-            Text = i18n.T("auth.prompt"),
-            Location = new Point(16, 16), Size = new Size(370, 40)
-        };
-        var txtKey = new TextBox
-        {
-            Location = new Point(16, 62), Size = new Size(370, 28),
-            UseSystemPasswordChar = true,
-            Text = current
-        };
-        var chkShow = new CheckBox
-        {
-            Text = i18n.T("auth.show_key"), AutoSize = true,
-            Location = new Point(16, 96)
-        };
-        chkShow.CheckedChanged += (_, _) => txtKey.UseSystemPasswordChar = !chkShow.Checked;
+        if (dlg.ShowDialog() != true) return;
 
-        var btnOpenSite = new Button
-        {
-            Text = i18n.T("auth.open_site"),
-            Location = new Point(16, 135), Size = new Size(180, 32),
-            FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand,
-            BackColor = Color.FromArgb(240, 240, 240)
-        };
-        btnOpenSite.Click += (_, _) =>
-        {
-            try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
-            catch { }
-        };
-
-        var btnOk = new Button
-        {
-            Text = "OK",
-            Location = new Point(220, 135), Size = new Size(80, 32),
-            DialogResult = DialogResult.OK,
-            BackColor = Color.FromArgb(102, 126, 234),
-            ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand
-        };
-        btnOk.FlatAppearance.BorderSize = 0;
-
-        var btnCancel = new Button
-        {
-            Text = i18n.T("select.cancel") ?? "Cancel",
-            Location = new Point(306, 135), Size = new Size(80, 32),
-            DialogResult = DialogResult.Cancel,
-            FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand
-        };
-
-        dlg.Controls.AddRange(new Control[] { lbl, txtKey, chkShow, btnOpenSite, btnOk, btnCancel });
-        dlg.AcceptButton = btnOk;
-        dlg.CancelButton = btnCancel;
-
-        if (dlg.ShowDialog() != DialogResult.OK) return;
-
-        var key = txtKey.Text.Trim();
+        var key = dlg.ApiKey?.Trim() ?? "";
         if (string.IsNullOrEmpty(key)) return;
 
         if (ValidateApiKey(key))

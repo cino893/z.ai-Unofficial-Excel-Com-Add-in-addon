@@ -36,6 +36,11 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
         ShowWelcome();
     }
 
+    public void RefreshLabels()
+    {
+        UpdateLabels();
+    }
+
     private void UpdateLabels()
     {
         var i18n = AddIn.I18n;

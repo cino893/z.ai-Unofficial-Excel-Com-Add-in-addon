@@ -9,16 +9,16 @@ public class RibbonController : ExcelRibbon
     private CustomTaskPane? _chatPane;
     private IRibbonUI? _ribbon;
 
-    // Known z.ai models with pricing info
+    // Known z.ai models with pricing info (emojis render in WPF)
     public static readonly (string Id, string Display)[] KnownModels =
     [
-        ("glm-4-flash", "GLM-4 Flash        * FREE (fast, free!)"),
-        ("glm-4-plus",  "GLM-4 Plus         $$ (default, powerful)"),
-        ("glm-4-long",  "GLM-4 Long         $$ (long context 128k)"),
-        ("glm-4",       "GLM-4              $ (standard)"),
-        ("glm-4-air",   "GLM-4 Air          $ (lightweight)"),
-        ("glm-3-turbo", "GLM-3 Turbo        * cheap (fastest)"),
-        ("glm-4v-plus", "GLM-4V Plus        $$$ (vision, images)"),
+        ("glm-4-flash", "GLM-4 Flash      ⚡ FREE (fast, free!)"),
+        ("glm-4-plus",  "GLM-4 Plus       💰💰 (default, powerful)"),
+        ("glm-4-long",  "GLM-4 Long       💰💰 (long context 128k)"),
+        ("glm-4",       "GLM-4            💰 (standard)"),
+        ("glm-4-air",   "GLM-4 Air        💰 (lightweight)"),
+        ("glm-3-turbo", "GLM-3 Turbo      ⚡ cheap (fastest)"),
+        ("glm-4v-plus", "GLM-4V Plus      💰💰💰 (vision, images)"),
     ];
 
     public override string GetCustomUI(string ribbonID)
@@ -97,9 +97,11 @@ public class RibbonController : ExcelRibbon
 
     public string GetStatusLabel(IRibbonControl control)
     {
-        return AddIn.Auth.IsLoggedIn()
-            ? "[OK] " + AddIn.I18n.T("ribbon.logged_in")
-            : "[--] " + AddIn.I18n.T("ribbon.not_logged");
+        if (!AddIn.Auth.IsLoggedIn())
+            return AddIn.I18n.T("ribbon.not_logged");
+
+        var balance = AddIn.Api.GetBalance();
+        return AddIn.I18n.T("ribbon.logged_in") + " | " + balance;
     }
 
     // ═══ Enabled states ═══
@@ -135,18 +137,19 @@ public class RibbonController : ExcelRibbon
 
     public void OnLogin(IRibbonControl control)
     {
-        // Open z.ai API keys page in browser
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
         catch { }
 
         AddIn.Auth.ShowLogin();
-        _ribbon?.Invalidate(); // refresh Login/Logout enabled state + status
+        AddIn.Api.InvalidateBalanceCache();
+        _ribbon?.Invalidate();
     }
 
     public void OnLogout(IRibbonControl control)
     {
         AddIn.Auth.ShowLogout();
+        AddIn.Api.InvalidateBalanceCache();
         _ribbon?.Invalidate();
     }
 
@@ -156,12 +159,12 @@ public class RibbonController : ExcelRibbon
         var items = KnownModels.Select(m => m.Display).ToArray();
         var keyMap = KnownModels.ToDictionary(m => m.Id, m => m.Display);
 
-        using var dlg = new UI.SelectDialog(
+        var dlg = new UI.WpfSelectDialog(
             AddIn.I18n.T("model.title"),
             AddIn.I18n.T("model.prompt"),
             items, current, keyMap);
 
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedKey))
+        if (dlg.ShowDialog() == true && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
             AddIn.Auth.SaveModel(dlg.SelectedKey);
             _ribbon?.Invalidate();
@@ -175,22 +178,24 @@ public class RibbonController : ExcelRibbon
         var items = langs.Select(l => $"{l.Key}  —  {l.Value}").ToArray();
         var keyMap = langs.ToDictionary(l => l.Key, l => l.Value);
 
-        using var dlg = new UI.SelectDialog(
+        var dlg = new UI.WpfSelectDialog(
             AddIn.I18n.T("lang.title"),
             AddIn.I18n.T("lang.select_prompt"),
             items, current, keyMap);
 
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrEmpty(dlg.SelectedKey))
+        if (dlg.ShowDialog() == true && !string.IsNullOrEmpty(dlg.SelectedKey))
         {
             AddIn.I18n.SetLanguage(dlg.SelectedKey);
-            _ribbon?.Invalidate(); // This refreshes all getLabel/getEnabled callbacks
+            _ribbon?.Invalidate();
+            // Refresh chat panel labels
+            RefreshChatPanel();
         }
     }
 
     public void OnAddTokens(IRibbonControl control)
     {
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
+            { FileName = "https://z.ai/manage-apikey/billing", UseShellExecute = true }); }
         catch { }
     }
 
@@ -203,5 +208,15 @@ public class RibbonController : ExcelRibbon
             AddIn.I18n.T("about.title"),
             System.Windows.Forms.MessageBoxButtons.OK,
             System.Windows.Forms.MessageBoxIcon.Information);
+    }
+
+    private void RefreshChatPanel()
+    {
+        try
+        {
+            var host = _chatPane?.ContentControl as UI.ChatPaneHost;
+            host?.ChatPanel?.Dispatcher.Invoke(() => host.ChatPanel.RefreshLabels());
+        }
+        catch { }
     }
 }

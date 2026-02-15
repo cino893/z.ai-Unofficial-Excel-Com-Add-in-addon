@@ -7,12 +7,12 @@
     <UserControl.Resources>
         <!-- Branding gradients -->
         <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#667EEA" Offset="0"/>
-            <GradientStop Color="#764BA2" Offset="1"/>
+            <GradientStop Color="#217346" Offset="0"/>
+            <GradientStop Color="#1D6B3F" Offset="1"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="SendBtnGradient" StartPoint="0,0" EndPoint="1,1">
-            <GradientStop Color="#667EEA" Offset="0"/>
-            <GradientStop Color="#5A67D8" Offset="1"/>
+            <GradientStop Color="#217346" Offset="0"/>
+            <GradientStop Color="#1D6B3F" Offset="1"/>
         </LinearGradientBrush>
 
         <!-- Template selector -->
@@ -149,7 +149,7 @@
                 Margin="44,0,0,8" Padding="12,8" CornerRadius="12"
                 Background="White" BorderBrush="#E4E6EB" BorderThickness="1">
             <StackPanel Orientation="Horizontal">
-                <Ellipse Width="6" Height="6" Fill="#667EEA" Margin="0,0,4,0">
+                <Ellipse Width="6" Height="6" Fill="#217346" Margin="0,0,4,0">
                     <Ellipse.Triggers>
                         <EventTrigger RoutedEvent="Loaded">
                             <BeginStoryboard>
@@ -162,7 +162,7 @@
                         </EventTrigger>
                     </Ellipse.Triggers>
                 </Ellipse>
-                <Ellipse Width="6" Height="6" Fill="#667EEA" Margin="0,0,4,0">
+                <Ellipse Width="6" Height="6" Fill="#217346" Margin="0,0,4,0">
                     <Ellipse.Triggers>
                         <EventTrigger RoutedEvent="Loaded">
                             <BeginStoryboard>
@@ -175,7 +175,7 @@
                         </EventTrigger>
                     </Ellipse.Triggers>
                 </Ellipse>
-                <Ellipse Width="6" Height="6" Fill="#667EEA">
+                <Ellipse Width="6" Height="6" Fill="#217346">
                     <Ellipse.Triggers>
                         <EventTrigger RoutedEvent="Loaded">
                             <BeginStoryboard>
@@ -250,19 +250,19 @@
                 <!-- Action buttons -->
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button x:Name="btnNewConv" Content="🗨 New" Margin="4,0"
-                            FontSize="11" Foreground="#667EEA" Background="Transparent"
-                            BorderBrush="#667EEA" BorderThickness="1" Padding="10,4"
+                            FontSize="11" Foreground="#217346" Background="Transparent"
+                            BorderBrush="#217346" BorderThickness="1" Padding="10,4"
                             Cursor="Hand" Click="OnNewChat">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border x:Name="Bd" CornerRadius="12" Padding="10,4"
-                                        BorderBrush="#667EEA" BorderThickness="1"
+                                        BorderBrush="#217346" BorderThickness="1"
                                         Background="Transparent">
                                     <ContentPresenter HorizontalAlignment="Center"/>
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter TargetName="Bd" Property="Background" Value="#667EEA15"/>
+                                        <Setter TargetName="Bd" Property="Background" Value="#21734615"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>

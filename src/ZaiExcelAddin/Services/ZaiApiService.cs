@@ -109,8 +109,8 @@ public class ZaiApiService
             var code = json?["error"]?["code"]?.GetValue<string>() ?? "";
             return code switch
             {
-                "1261" => t.T("error.balance_empty"),     // 额度已用完
-                "1301" => t.T("error.content_filter"),     // 内容审核
+                "1261" => t.T("error.balance_empty"),
+                "1301" => t.T("error.content_filter"),
                 "1302" => t.T("error.content_filter"),
                 _ => httpCode switch
                 {
@@ -130,4 +130,57 @@ public class ZaiApiService
             };
         }
     }
+
+    // ═══ Balance API ═══
+    private const string BalanceUrl = "https://api.z.ai/api/platform-charge-zai/business/accountBalance";
+    private string? _cachedBalance;
+    private DateTime _balanceFetchedAt = DateTime.MinValue;
+
+    /// <summary>Fetch account balance. Caches for 60 seconds.</summary>
+    public string GetBalance(bool forceRefresh = false)
+    {
+        if (!forceRefresh && _cachedBalance != null && (DateTime.Now - _balanceFetchedAt).TotalSeconds < 60)
+            return _cachedBalance;
+
+        var apiKey = AddIn.Auth.LoadApiKey().Trim();
+        apiKey = new string(apiKey.Where(c => c >= 0x20 && c <= 0x7E).ToArray());
+        if (string.IsNullOrEmpty(apiKey)) return "—";
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, BalanceUrl);
+            request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
+            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            var response = _http.Send(request);
+            var body = response.Content.ReadAsStringAsync().Result;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = JsonNode.Parse(body);
+                // Try common response structures
+                var balance = json?["data"]?["balance"]?.GetValue<decimal>()
+                    ?? json?["data"]?["available"]?.GetValue<decimal>()
+                    ?? json?["balance"]?.GetValue<decimal>();
+                if (balance.HasValue)
+                {
+                    _cachedBalance = $"{balance.Value:F2} CNY";
+                    _balanceFetchedAt = DateTime.Now;
+                    return _cachedBalance;
+                }
+                // If structure unknown, return raw data node
+                var dataStr = json?["data"]?.ToJsonString() ?? body;
+                _cachedBalance = dataStr.Length > 30 ? dataStr[..30] + "..." : dataStr;
+                _balanceFetchedAt = DateTime.Now;
+                return _cachedBalance;
+            }
+            return "—";
+        }
+        catch (Exception ex)
+        {
+            AddIn.Logger.Debug($"Balance fetch error: {ex.Message}");
+            return "—";
+        }
+    }
+
+    public void InvalidateBalanceCache() { _cachedBalance = null; }
 }
