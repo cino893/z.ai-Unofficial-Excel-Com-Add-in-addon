@@ -9,16 +9,16 @@ public class RibbonController : ExcelRibbon
     private CustomTaskPane? _chatPane;
     private IRibbonUI? _ribbon;
 
-    // Known z.ai models with pricing emoji
+    // Known z.ai models with pricing info
     public static readonly (string Id, string Display)[] KnownModels =
     [
-        ("glm-4-plus",  "GLM-4 Plus       \U0001f4b0\U0001f4b0  (domyślny, szybki)"),
-        ("glm-4-long",  "GLM-4 Long       \U0001f4b0\U0001f4b0  (długi kontekst 128k)"),
-        ("glm-4-flash", "GLM-4 Flash      ⚡ FREE  (szybki, darmowy!)"),
-        ("glm-4",       "GLM-4            \U0001f4b0   (standardowy)"),
-        ("glm-4-air",   "GLM-4 Air        \U0001f4b0   (lekki)"),
-        ("glm-3-turbo", "GLM-3 Turbo      ⚡ tani  (najszybszy)"),
-        ("glm-4v-plus", "GLM-4V Plus      \U0001f4b0\U0001f4b0\U0001f4b0 (vision, obrazy)"),
+        ("glm-4-flash", "GLM-4 Flash        * FREE (fast, free!)"),
+        ("glm-4-plus",  "GLM-4 Plus         $$ (default, powerful)"),
+        ("glm-4-long",  "GLM-4 Long         $$ (long context 128k)"),
+        ("glm-4",       "GLM-4              $ (standard)"),
+        ("glm-4-air",   "GLM-4 Air          $ (lightweight)"),
+        ("glm-3-turbo", "GLM-3 Turbo        * cheap (fastest)"),
+        ("glm-4v-plus", "GLM-4V Plus        $$$ (vision, images)"),
     ];
 
     public override string GetCustomUI(string ribbonID)
@@ -71,14 +71,14 @@ public class RibbonController : ExcelRibbon
         var t = AddIn.I18n;
         return control.Id switch
         {
-            "btnChat"      => "\U0001f4ac " + t.T("menu.chat"),
-            "btnLogin"     => "\U0001f511 " + t.T("menu.login"),
-            "btnLogout"    => "\U0001f6aa " + t.T("menu.logout"),
-            "btnModel"     => "\U0001f916 " + t.T("menu.model"),
-            "btnAddTokens" => "\U0001f4b0 " + t.T("menu.add_tokens"),
-            "btnLang"      => "\U0001f310 " + t.T("menu.language"),
-            "btnLog"       => "\U0001f4cb " + t.T("menu.viewlog"),
-            "btnAbout"     => "\u2139\ufe0f " + t.T("menu.about"),
+            "btnChat"      => t.T("menu.chat"),
+            "btnLogin"     => t.T("menu.login"),
+            "btnLogout"    => t.T("menu.logout"),
+            "btnModel"     => t.T("menu.model"),
+            "btnAddTokens" => t.T("menu.add_tokens"),
+            "btnLang"      => t.T("menu.language"),
+            "btnLog"       => t.T("menu.viewlog"),
+            "btnAbout"     => t.T("menu.about"),
             _ => control.Id
         };
     }
@@ -98,8 +98,8 @@ public class RibbonController : ExcelRibbon
     public string GetStatusLabel(IRibbonControl control)
     {
         return AddIn.Auth.IsLoggedIn()
-            ? "\u2705 " + AddIn.I18n.T("ribbon.logged_in")
-            : "\u274c " + AddIn.I18n.T("ribbon.not_logged");
+            ? "[OK] " + AddIn.I18n.T("ribbon.logged_in")
+            : "[--] " + AddIn.I18n.T("ribbon.not_logged");
     }
 
     // ═══ Enabled states ═══
@@ -137,7 +137,7 @@ public class RibbonController : ExcelRibbon
     {
         // Open z.ai API keys page in browser
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+            { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
         catch { }
 
         AddIn.Auth.ShowLogin();
@@ -190,7 +190,7 @@ public class RibbonController : ExcelRibbon
     public void OnAddTokens(IRibbonControl control)
     {
         try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+            { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
         catch { }
     }
 

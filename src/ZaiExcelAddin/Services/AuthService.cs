@@ -13,6 +13,7 @@ public class AuthService
 
     public void SaveApiKey(string key)
     {
+        key = SanitizeKey(key);
         using var reg = Registry.CurrentUser.CreateSubKey(RegKeyPath);
         reg.SetValue("ApiKey", key);
         _cachedApiKey = key;
@@ -61,15 +62,22 @@ public class AuthService
         catch { return "glm-4-plus"; }
     }
 
+    /// <summary>Strip non-ASCII characters from API key (copy-paste can include invisible Unicode).</summary>
+    private static string SanitizeKey(string key)
+    {
+        return new string(key.Where(c => c >= 0x20 && c <= 0x7E).ToArray());
+    }
+
     public bool ValidateApiKey(string key)
     {
+        key = SanitizeKey(key);
         AddIn.Logger.Info("Validating API key...");
         try
         {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {key}");
             var body = new StringContent(
-                """{"model":"glm-4-plus","messages":[{"role":"user","content":"Hi"}],"max_tokens":5}""",
+                """{"model":"glm-4-flash","messages":[{"role":"user","content":"Hi"}],"max_tokens":5}""",
                 System.Text.Encoding.UTF8, "application/json");
             var response = client.PostAsync(ApiUrl, body).Result;
             AddIn.Logger.Debug($"Validation: HTTP {(int)response.StatusCode}");
@@ -119,7 +127,7 @@ public class AuthService
 
         var btnOpenSite = new Button
         {
-            Text = "\U0001f310 " + i18n.T("auth.open_site"),
+            Text = i18n.T("auth.open_site"),
             Location = new Point(16, 135), Size = new Size(180, 32),
             FlatStyle = FlatStyle.Flat, Cursor = Cursors.Hand,
             BackColor = Color.FromArgb(240, 240, 240)
@@ -127,7 +135,7 @@ public class AuthService
         btnOpenSite.Click += (_, _) =>
         {
             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                { FileName = "https://open.z.ai/", UseShellExecute = true }); }
+                { FileName = "https://z.ai/manage-apikey/apikey-list", UseShellExecute = true }); }
             catch { }
         };
 

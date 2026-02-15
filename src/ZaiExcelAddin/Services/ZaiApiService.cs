@@ -15,7 +15,9 @@ public class ZaiApiService
     public (bool Success, JsonNode? Data, string? Error) SendCompletion(
         JsonArray messages, JsonArray? tools = null, string? model = null)
     {
-        var apiKey = AddIn.Auth.LoadApiKey();
+        var apiKey = AddIn.Auth.LoadApiKey().Trim();
+        // Ensure key only contains ASCII (copy-paste can introduce invisible Unicode)
+        apiKey = new string(apiKey.Where(c => c >= 0x20 && c <= 0x7E).ToArray());
         if (string.IsNullOrEmpty(apiKey))
         {
             AddIn.Logger.Error("SendCompletion: No API key");
