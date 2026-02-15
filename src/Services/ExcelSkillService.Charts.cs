@@ -217,45 +217,64 @@ public partial class ExcelSkillService
         return result.ToJsonString();
     }
 
-    // --- move_pivot_table ---
-    private string SkillMovePivotTable(JsonNode args)
+    // --- move_table ---
+    private string SkillMoveTable(JsonNode args)
     {
         dynamic app = GetApp();
-        dynamic ws = GetTargetSheet(args);
         dynamic wb = app.ActiveWorkbook;
-        string pivotName = Str(args["pivot_name"]);
+        string sourceName = Str(args["name"]);
+        string sourceRange = Str(args["source_range"]);
         string destSheetName = Str(args["dest_sheet"]);
-        string destCell = Str(args["dest_cell"], "A3");
+        string destCell = Str(args["dest_cell"], "A1");
+        dynamic sourceSheet = GetTargetSheet(args);
 
-        // Find the pivot table
+        // 1. Try to find a PivotTable by name
         dynamic? foundPivot = null;
-        dynamic? sourceSheet = null;
+        dynamic? pivotSheet = null;
 
-        foreach (dynamic sheet in wb.Worksheets)
+        if (!string.IsNullOrEmpty(sourceName))
+        {
+            foreach (dynamic sheet in wb.Worksheets)
+            {
+                try
+                {
+                    foreach (dynamic pt in sheet.PivotTables())
+                    {
+                        if ((string)pt.Name == sourceName)
+                        {
+                            foundPivot = pt;
+                            pivotSheet = sheet;
+                            break;
+                        }
+                    }
+                    if (foundPivot != null) break;
+                }
+                catch { /* sheet may not have pivot tables */ }
+            }
+        }
+
+        // 2. Also check if source_range overlaps a pivot table
+        if (foundPivot == null && !string.IsNullOrEmpty(sourceRange))
         {
             try
             {
-                foreach (dynamic pt in sheet.PivotTables())
+                dynamic srcRange = sourceSheet.Range[sourceRange];
+                foreach (dynamic pt in sourceSheet.PivotTables())
                 {
-                    if ((string)pt.Name == pivotName)
+                    dynamic ptRange = pt.TableRange2;
+                    dynamic overlap = app.Intersect(srcRange, ptRange);
+                    if (overlap != null)
                     {
                         foundPivot = pt;
-                        sourceSheet = sheet;
+                        pivotSheet = sourceSheet;
                         break;
                     }
                 }
-                if (foundPivot != null) break;
             }
-            catch { /* sheet may not have pivot tables */ }
+            catch { /* no pivot tables on sheet */ }
         }
 
-        if (foundPivot == null)
-            return JsonSerializer.Serialize(new { error = $"PivotTable not found: {pivotName}" });
-
-        if (sourceSheet == null)
-            return JsonSerializer.Serialize(new { error = "Source sheet not found" });
-
-        // Determine destination
+        // Determine destination sheet
         dynamic destSheet;
         if (string.IsNullOrEmpty(destSheetName))
         {
@@ -274,20 +293,46 @@ public partial class ExcelSkillService
             }
         }
 
-        // Move the pivot table
         dynamic destRange = destSheet.Range[destCell];
-        foundPivot.TableRange2.Cut();
-        destRange.Select();
-        destSheet.Paste(destRange);
 
-        var result = new JsonObject
+        // 3a. Move pivot table using Location property
+        if (foundPivot != null)
         {
-            ["success"] = true,
-            ["pivot_name"] = pivotName,
-            ["from_sheet"] = (string)sourceSheet.Name,
-            ["to_sheet"] = (string)destSheet.Name,
-            ["dest_cell"] = destCell
-        };
-        return result.ToJsonString();
+            string fromSheet = (string)(pivotSheet?.Name ?? "?");
+            string ptName = (string)foundPivot.Name;
+
+            // PivotTable.Location moves the table properly without Cut/Paste
+            foundPivot.Location = destRange;
+
+            return new JsonObject
+            {
+                ["success"] = true,
+                ["moved"] = "pivot_table",
+                ["name"] = ptName,
+                ["from_sheet"] = fromSheet,
+                ["to_sheet"] = (string)destSheet.Name,
+                ["dest_cell"] = destCell
+            }.ToJsonString();
+        }
+
+        // 3b. Move regular data range using Copy + clear source
+        if (!string.IsNullOrEmpty(sourceRange))
+        {
+            dynamic srcRange = sourceSheet.Range[sourceRange];
+            srcRange.Copy(destRange);
+            srcRange.Clear();
+
+            return new JsonObject
+            {
+                ["success"] = true,
+                ["moved"] = "data_range",
+                ["source_range"] = sourceRange,
+                ["from_sheet"] = (string)sourceSheet.Name,
+                ["to_sheet"] = (string)destSheet.Name,
+                ["dest_cell"] = destCell
+            }.ToJsonString();
+        }
+
+        return JsonSerializer.Serialize(new { error = "Provide either 'name' (pivot table name) or 'source_range' to move." });
     }
 }

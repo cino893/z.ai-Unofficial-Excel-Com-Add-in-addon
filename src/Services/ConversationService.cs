@@ -136,6 +136,18 @@ public class ConversationService
 
             AddIn.Logger.Info($"Tool-calling loop round {round}/{MaxToolRounds}");
 
+            // Inject round info so the model knows its budget
+            var roundReplacements = new Dictionary<string, string>
+            {
+                ["CurrentRound"] = round.ToString(),
+                ["MaxToolRounds"] = MaxToolRounds.ToString()
+            };
+            _messages.Add(new JsonObject
+            {
+                ["role"] = "system",
+                ["content"] = AddIn.I18n.T("conv.round_info", roundReplacements)
+            });
+
             if (round == MaxToolRounds)
             {
                 _messages.Add(new JsonObject

@@ -202,16 +202,17 @@ public partial class ExcelSkillService
                 },
                 new JsonArray { "source_range", "row_fields", "value_fields" }),
 
-            MakeTool("move_pivot_table",
-                "Move a PivotTable from current location to a new sheet or cell. Use this when operations are blocked by an existing pivot table.",
+            MakeTool("move_table",
+                "Move a data range or PivotTable to another sheet/location. Automatically detects if the range contains a PivotTable and moves it properly. Use when a pivot table blocks delete_rows/insert_rows.",
                 new JsonObject
                 {
-                    ["pivot_name"] = PropString("Name of the PivotTable to move (get from error message or list)"),
-                    ["dest_sheet"] = PropString("Destination sheet name (optional, if omitted creates new sheet)"),
-                    ["dest_cell"] = PropString("Destination cell e.g. A1 (default: A3)"),
-                    ["sheet"] = PropString("Source sheet containing the pivot table (optional, defaults to active)")
+                    ["name"] = PropString("PivotTable name to move (optional — if omitted, uses source_range)"),
+                    ["source_range"] = PropString("Source data range to move e.g. A1:F50 (optional if name is given)"),
+                    ["dest_sheet"] = PropString("Destination sheet name (optional, creates new sheet if omitted)"),
+                    ["dest_cell"] = PropString("Destination cell e.g. A1 (default: A1)"),
+                    ["sheet"] = PropString("Source sheet name (optional, defaults to active)")
                 },
-                new JsonArray { "pivot_name" }),
+                new JsonArray()),
 
             MakeTool("auto_filter",
                 "Apply or remove auto-filter on a range. Call without criteria to toggle filter on/off.",
@@ -353,7 +354,7 @@ public partial class ExcelSkillService
                 "delete_chart" => SkillDeleteChart(args),
                 "list_charts" => SkillListCharts(args),
                 "create_pivot_table" => SkillCreatePivotTable(args),
-                "move_pivot_table" => SkillMovePivotTable(args),
+                "move_table" => SkillMoveTable(args),
                 "auto_filter" => SkillAutoFilter(args),
                 "find_replace" => SkillFindReplace(args),
                 "conditional_format" => SkillConditionalFormat(args),

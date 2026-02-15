@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ZaiExcelAddin.Models;
+using ZaiExcelAddin.Services;
 
 namespace ZaiExcelAddin.UI;
 
@@ -109,6 +110,9 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
         AddMessage("info", AddIn.I18n.T("chat.continuing"));
         SetProcessing(true);
 
+        // Capture workbook state for undo before agent continues editing
+        UndoService.CaptureSnapshot();
+
         try
         {
             var response = await Task.Run(() =>
@@ -118,6 +122,9 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
 
             if (!string.IsNullOrEmpty(response))
                 AddMessage("assistant", response);
+
+            // Register undo so user can Ctrl+Z the agent's batch
+            UndoService.RegisterUndo();
         }
         catch (Exception ex)
         {
@@ -155,6 +162,9 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
         AddMessage("user", text);
         SetProcessing(true);
 
+        // Capture workbook state for undo before agent starts editing
+        UndoService.CaptureSnapshot();
+
         try
         {
             var response = await Task.Run(() =>
@@ -164,6 +174,9 @@ public partial class ChatPanel : System.Windows.Controls.UserControl
 
             if (!string.IsNullOrEmpty(response))
                 AddMessage("assistant", response);
+
+            // Register undo so user can Ctrl+Z the agent's batch
+            UndoService.RegisterUndo();
         }
         catch (Exception ex)
         {
