@@ -9,18 +9,6 @@ public class RibbonController : ExcelRibbon
     private CustomTaskPane? _chatPane;
     private IRibbonUI? _ribbon;
 
-    // Known z.ai models with pricing info (emojis render in WPF)
-    public static readonly (string Id, string Display)[] KnownModels =
-    [
-        ("glm-4-flash", "GLM-4 Flash      ⚡ FREE (fast, free!)"),
-        ("glm-4-plus",  "GLM-4 Plus       💰💰 (default, powerful)"),
-        ("glm-4-long",  "GLM-4 Long       💰💰 (long context 128k)"),
-        ("glm-4",       "GLM-4            💰 (standard)"),
-        ("glm-4-air",   "GLM-4 Air        💰 (lightweight)"),
-        ("glm-3-turbo", "GLM-3 Turbo      ⚡ cheap (fastest)"),
-        ("glm-4v-plus", "GLM-4V Plus      💰💰💰 (vision, images)"),
-    ];
-
     public override string GetCustomUI(string ribbonID)
     {
         return @"
@@ -41,7 +29,8 @@ public class RibbonController : ExcelRibbon
                   getEnabled='GetLogoutEnabled'/>
           <separator id='sep2'/>
           <button id='btnModel' getLabel='GetLabel' size='normal'
-                  onAction='OnSelectModel' imageMso='ServerSettings'/>
+                  onAction='OnSelectModel' imageMso='ServerSettings'
+                  getEnabled='GetLogoutEnabled'/>
         </group>
         <group id='grpInfo' getLabel='GetGroupLabel'>
           <labelControl id='lblStatus' getLabel='GetStatusLabel'/>
@@ -156,8 +145,9 @@ public class RibbonController : ExcelRibbon
     public void OnSelectModel(IRibbonControl control)
     {
         var current = AddIn.Auth.LoadModel();
-        var items = KnownModels.Select(m => m.Display).ToArray();
-        var keyMap = KnownModels.ToDictionary(m => m.Id, m => m.Display);
+        var models = AddIn.Api.GetAvailableModels();
+        var items = models.Select(m => m).ToArray();
+        var keyMap = models.ToDictionary(m => m, m => m);
 
         var dlg = new UI.WpfSelectDialog(
             AddIn.I18n.T("model.title"),

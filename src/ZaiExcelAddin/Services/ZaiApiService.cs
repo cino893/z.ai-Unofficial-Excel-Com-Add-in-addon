@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -131,10 +132,42 @@ public class ZaiApiService
         }
     }
 
-    // ═══ Balance API ═══
+    // ═══ Balance API (requires JWT auth) ═══
     private const string BalanceUrl = "https://api.z.ai/api/platform-charge-zai/business/accountBalance";
     private string? _cachedBalance;
     private DateTime _balanceFetchedAt = DateTime.MinValue;
+
+    /// <summary>Generate JWT token from API key (format: id.secret) using HS256.</summary>
+    private static string? GenerateJwt(string apiKey, int expireSeconds = 300)
+    {
+        try
+        {
+            var parts = apiKey.Split('.');
+            if (parts.Length != 2) return null;
+            var id = parts[0];
+            var secret = parts[1];
+
+            // Header
+            var header = Convert.ToBase64String(Encoding.UTF8.GetBytes("""{"alg":"HS256","sign_type":"SIGN","typ":"JWT"}"""))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            // Payload
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var exp = DateTimeOffset.UtcNow.AddSeconds(expireSeconds).ToUnixTimeMilliseconds();
+            var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(
+                    $$$"""{"api_key":"{{{id}}}","exp":{{{exp}}},"timestamp":{{{now}}}}"""))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            // Signature
+            var data = $"{header}.{payload}";
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+            var sig = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(data)))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            return $"{header}.{payload}.{sig}";
+        }
+        catch { return null; }
+    }
 
     /// <summary>Fetch account balance. Caches for 60 seconds.</summary>
     public string GetBalance(bool forceRefresh = false)
@@ -148,31 +181,34 @@ public class ZaiApiService
 
         try
         {
+            var jwt = GenerateJwt(apiKey);
+            var token = jwt ?? apiKey; // fallback to raw key if JWT fails
+
             using var request = new HttpRequestMessage(HttpMethod.Post, BalanceUrl);
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            request.Headers.Add("Authorization", $"Bearer {token}");
             var response = _http.Send(request);
             var body = response.Content.ReadAsStringAsync().Result;
+            AddIn.Logger.Debug($"Balance response: {body[..Math.Min(200, body.Length)]}");
 
             if (response.IsSuccessStatusCode)
             {
                 var json = JsonNode.Parse(body);
-                // Try common response structures
                 var balance = json?["data"]?["balance"]?.GetValue<decimal>()
-                    ?? json?["data"]?["available"]?.GetValue<decimal>()
-                    ?? json?["balance"]?.GetValue<decimal>();
+                    ?? json?["data"]?["available"]?.GetValue<decimal>();
                 if (balance.HasValue)
                 {
                     _cachedBalance = $"{balance.Value:F2} CNY";
                     _balanceFetchedAt = DateTime.Now;
                     return _cachedBalance;
                 }
-                // If structure unknown, return raw data node
+                // Try to extract any numeric from data
                 var dataStr = json?["data"]?.ToJsonString() ?? body;
-                _cachedBalance = dataStr.Length > 30 ? dataStr[..30] + "..." : dataStr;
+                _cachedBalance = dataStr.Length > 40 ? dataStr[..40] + "..." : dataStr;
                 _balanceFetchedAt = DateTime.Now;
                 return _cachedBalance;
             }
+            AddIn.Logger.Debug($"Balance error: HTTP {(int)response.StatusCode}");
             return "—";
         }
         catch (Exception ex)
@@ -183,4 +219,52 @@ public class ZaiApiService
     }
 
     public void InvalidateBalanceCache() { _cachedBalance = null; }
+
+    // ═══ Models API ═══
+    private string[]? _cachedModels;
+    private DateTime _modelsFetchedAt = DateTime.MinValue;
+
+    /// <summary>Fetch available models from API. Caches for 5 minutes.</summary>
+    public string[] GetAvailableModels(bool forceRefresh = false)
+    {
+        if (!forceRefresh && _cachedModels != null && (DateTime.Now - _modelsFetchedAt).TotalMinutes < 5)
+            return _cachedModels;
+
+        var apiKey = AddIn.Auth.LoadApiKey().Trim();
+        apiKey = new string(apiKey.Where(c => c >= 0x20 && c <= 0x7E).ToArray());
+        if (string.IsNullOrEmpty(apiKey)) return DefaultModels;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"{ApiBase}/models");
+            request.Headers.Add("Authorization", $"Bearer {apiKey}");
+            var response = _http.Send(request);
+            var body = response.Content.ReadAsStringAsync().Result;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = JsonNode.Parse(body);
+                var data = json?["data"]?.AsArray();
+                if (data != null && data.Count > 0)
+                {
+                    _cachedModels = data
+                        .Select(m => m?["id"]?.GetValue<string>())
+                        .Where(id => !string.IsNullOrEmpty(id))
+                        .Cast<string>()
+                        .OrderBy(id => id)
+                        .ToArray();
+                    _modelsFetchedAt = DateTime.Now;
+                    AddIn.Logger.Info($"Fetched {_cachedModels.Length} models from API");
+                    return _cachedModels;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AddIn.Logger.Debug($"Models fetch error: {ex.Message}");
+        }
+        return DefaultModels;
+    }
+
+    public static readonly string[] DefaultModels = ["glm-4.5-air", "glm-4.5", "glm-4.6", "glm-4.7", "glm-5"];
 }
