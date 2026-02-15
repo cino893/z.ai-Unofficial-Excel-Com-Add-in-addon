@@ -127,7 +127,8 @@ public class ConversationService
     {
         string? previousSignature = null;
         int repeatCount = 0;
-        int roundInfoIndex = -1; // Track the injected round-info message
+        int roundInfoIndex = -1;
+        int finalPromptIndex = -1;
 
         for (int round = 1; round <= MaxToolRounds; round++)
         {
@@ -135,6 +136,7 @@ public class ConversationService
             {
                 AddIn.Logger.Info("Cancelled by user");
                 LastStopReason = StopReason.Cancelled;
+                RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
                 return AddIn.I18n.T("conv.cancelled");
             }
 
@@ -152,7 +154,10 @@ public class ConversationService
                 ["content"] = AddIn.I18n.T("conv.round_info", roundReplacements)
             };
             if (roundInfoIndex >= 0 && roundInfoIndex < _messages.Count)
+            {
                 _messages.RemoveAt(roundInfoIndex);
+                if (finalPromptIndex > roundInfoIndex) finalPromptIndex--;
+            }
             _messages.Add(roundMsg);
             roundInfoIndex = _messages.Count - 1;
 
@@ -163,6 +168,7 @@ public class ConversationService
                     ["role"] = "user",
                     ["content"] = AddIn.I18n.T("conv.final_round_prompt", MaxToolRoundPlaceholders)
                 });
+                finalPromptIndex = _messages.Count - 1;
             }
 
             var (success, data, error) = AddIn.Api.SendCompletion(
@@ -172,6 +178,7 @@ public class ConversationService
             {
                 LastStopReason = StopReason.Error;
                 AddIn.Logger.Error($"API call failed: {error}");
+                RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
                 return error ?? AddIn.I18n.T("conv.api_error");
             }
 
@@ -197,7 +204,18 @@ public class ConversationService
                     if (repeatCount >= MaxSameToolRepeats)
                     {
                         AddIn.Logger.Warn("Tool loop detected, breaking out");
+                        // Add dummy results for orphaned tool_calls
+                        foreach (var tc in toolCalls)
+                        {
+                            _messages.Add(new JsonObject
+                            {
+                                ["role"] = "tool",
+                                ["content"] = "{\"error\":\"Loop detected, execution stopped\"}",
+                                ["tool_call_id"] = tc!["id"]!.GetValue<string>()
+                            });
+                        }
                         LastStopReason = StopReason.LoopDetected;
+                        RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
                         return AddIn.I18n.T("conv.loop_detected");
                     }
                 }
@@ -209,19 +227,21 @@ public class ConversationService
 
                 foreach (var toolCall in toolCalls)
                 {
-                    if (_cts?.IsCancellationRequested == true)
-                    {
-                        AddIn.Logger.Info("Cancelled by user during tool execution");
-                        LastStopReason = StopReason.Cancelled;
-                        return AddIn.I18n.T("conv.cancelled");
-                    }
-
                     var id = toolCall!["id"]!.GetValue<string>();
                     var name = toolCall["function"]!["name"]!.GetValue<string>();
                     var arguments = toolCall["function"]!["arguments"]!.GetValue<string>();
 
-                    AddIn.Logger.Info($"Executing tool: {name}");
-                    var result = toolExecutor(name, arguments);
+                    string result;
+                    if (_cts?.IsCancellationRequested == true)
+                    {
+                        // Must provide result for every tool_call in the batch
+                        result = "{\"error\":\"Cancelled by user\"}";
+                    }
+                    else
+                    {
+                        AddIn.Logger.Info($"Executing tool: {name}");
+                        result = toolExecutor(name, arguments);
+                    }
 
                     _messages.Add(new JsonObject
                     {
@@ -240,10 +260,10 @@ public class ConversationService
             {
                 LastStopReason = StopReason.Error;
                 AddIn.Logger.Error("Assistant returned empty response");
-                RemoveRoundInfo(roundInfoIndex);
+                RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
                 return AddIn.I18n.T("conv.generic_failure");
             }
-            RemoveRoundInfo(roundInfoIndex);
+            RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
             _messages.Add(new JsonObject
             {
                 ["role"] = "assistant",
@@ -256,17 +276,27 @@ public class ConversationService
             return content;
         }
 
-        RemoveRoundInfo(roundInfoIndex);
+        RemoveTransientMessages(ref roundInfoIndex, ref finalPromptIndex);
         AddIn.Logger.Warn($"Max tool rounds ({MaxToolRounds}) reached");
         LastStopReason = StopReason.MaxRounds;
         return AddIn.I18n.TFormat("conv.max_rounds", MaxToolRounds);
     }
 
-    /// <summary>Remove the transient round-info system message from history.</summary>
-    private void RemoveRoundInfo(int index)
+    /// <summary>Remove transient round-info and final-prompt messages from history.</summary>
+    private void RemoveTransientMessages(ref int roundInfoIndex, ref int finalPromptIndex)
     {
-        if (index >= 0 && index < _messages.Count)
-            _messages.RemoveAt(index);
+        // Remove in descending order to avoid index shifting issues
+        if (finalPromptIndex >= 0 && finalPromptIndex < _messages.Count)
+        {
+            _messages.RemoveAt(finalPromptIndex);
+            if (roundInfoIndex > finalPromptIndex) roundInfoIndex--;
+            finalPromptIndex = -1;
+        }
+        if (roundInfoIndex >= 0 && roundInfoIndex < _messages.Count)
+        {
+            _messages.RemoveAt(roundInfoIndex);
+            roundInfoIndex = -1;
+        }
     }
 
     /// <summary>Build a short summary of recent tool calls for context on continue.</summary>

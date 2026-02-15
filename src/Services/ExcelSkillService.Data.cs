@@ -102,25 +102,33 @@ public partial class ExcelSkillService
         string startCell = Str(args["start_cell"]);
         var data = args["data"]!.AsArray();
 
-        dynamic startRange = ws.Range[startCell];
-        int rowsWritten = 0;
+        int rows = data.Count;
+        if (rows == 0)
+            return new JsonObject { ["success"] = true, ["start_cell"] = startCell, ["rows_written"] = 0 }.ToJsonString();
 
-        for (int r = 0; r < data.Count; r++)
+        int cols = data[0]!.AsArray().Count;
+
+        // Build 2D object array for bulk write (single COM call)
+        var values = new object?[rows, cols];
+        for (int r = 0; r < rows; r++)
         {
             var rowData = data[r]!.AsArray();
-            for (int c = 0; c < rowData.Count; c++)
+            for (int c = 0; c < Math.Min(rowData.Count, cols); c++)
             {
-                var val = rowData[c];
-                startRange.Offset[r, c].Value = val?.GetValue<string>() ?? "";
+                values[r, c] = rowData[c]?.GetValue<string>() ?? "";
             }
-            rowsWritten++;
         }
+
+        dynamic startRange = ws.Range[startCell];
+        dynamic destRange = ws.Range[startRange, startRange.Offset[rows - 1, cols - 1]];
+        destRange.Value = values;
 
         var result = new JsonObject
         {
             ["success"] = true,
             ["start_cell"] = startCell,
-            ["rows_written"] = rowsWritten
+            ["rows_written"] = rows,
+            ["cells_written"] = rows * cols
         };
         return result.ToJsonString();
     }
