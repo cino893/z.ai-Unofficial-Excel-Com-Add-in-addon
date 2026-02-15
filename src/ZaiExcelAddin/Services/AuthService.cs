@@ -57,9 +57,9 @@ public class AuthService
         try
         {
             using var reg = Registry.CurrentUser.OpenSubKey(RegKeyPath);
-            return reg?.GetValue("Model")?.ToString() ?? "glm-4.5-air";
+            return reg?.GetValue("Model")?.ToString() ?? "glm-4.7-flash";
         }
-        catch { return "glm-4.5-air"; }
+        catch { return "glm-4.7-flash"; }
     }
 
     /// <summary>Strip non-ASCII characters from API key (copy-paste can include invisible Unicode).</summary>
@@ -77,7 +77,7 @@ public class AuthService
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {key}");
             var body = new StringContent(
-                """{"model":"glm-4.5-air","messages":[{"role":"user","content":"Hi"}],"max_tokens":5}""",
+                """{"model":"glm-4.7-flash","messages":[{"role":"user","content":"Hi"}],"max_tokens":5}""",
                 System.Text.Encoding.UTF8, "application/json");
             var response = client.PostAsync(ApiUrl, body).Result;
             AddIn.Logger.Debug($"Validation: HTTP {(int)response.StatusCode}");

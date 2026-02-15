@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -132,93 +131,70 @@ public class ZaiApiService
         }
     }
 
-    // ═══ Balance API (requires JWT auth) ═══
-    private const string BalanceUrl = "https://api.z.ai/api/platform-charge-zai/business/accountBalance";
-    private string? _cachedBalance;
-    private DateTime _balanceFetchedAt = DateTime.MinValue;
-
-    /// <summary>Generate JWT token from API key (format: id.secret) using HS256.</summary>
-    private static string? GenerateJwt(string apiKey, int expireSeconds = 300)
+    // ═══ Model catalog with pricing (from docs.z.ai/guides/overview/pricing) ═══
+    public record ModelInfo(string Id, string InputPrice, string OutputPrice, int SortOrder)
     {
-        try
+        public string Emoji => SortOrder switch
         {
-            var parts = apiKey.Split('.');
-            if (parts.Length != 2) return null;
-            var id = parts[0];
-            var secret = parts[1];
-
-            // Header
-            var header = Convert.ToBase64String(Encoding.UTF8.GetBytes("""{"alg":"HS256","sign_type":"SIGN","typ":"JWT"}"""))
-                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-            // Payload
-            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            var exp = DateTimeOffset.UtcNow.AddSeconds(expireSeconds).ToUnixTimeMilliseconds();
-            var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(
-                    $$$"""{"api_key":"{{{id}}}","exp":{{{exp}}},"timestamp":{{{now}}}}"""))
-                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-            // Signature
-            var data = $"{header}.{payload}";
-            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
-            var sig = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(data)))
-                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-            return $"{header}.{payload}.{sig}";
-        }
-        catch { return null; }
+            < 10  => "⚡",   // FREE
+            < 30  => "💚",   // Budget
+            < 50  => "🔷",   // Standard
+            _     => "💎",   // Premium
+        };
+        public string PriceTag => SortOrder < 10
+            ? "FREE"
+            : $"${InputPrice}→${OutputPrice}/MTok";
+        public string DisplayLine => $"{Emoji}  {Id}   —   {PriceTag}";
     }
 
-    /// <summary>Fetch account balance. Caches for 60 seconds.</summary>
-    public string GetBalance(bool forceRefresh = false)
+    public static readonly ModelInfo[] ModelCatalog =
+    [
+        new("glm-4.7-flash",       "0",    "0",    0),
+        new("glm-4.5-flash",       "0",    "0",    1),
+        new("glm-4.7-flashx",      "0.07", "0.4",  10),
+        new("glm-4-32b-0414-128k", "0.1",  "0.1",  11),
+        new("glm-4.5-air",         "0.2",  "1.1",  20),
+        new("glm-4.5",             "0.6",  "2.2",  30),
+        new("glm-4.6",             "0.6",  "2.2",  31),
+        new("glm-4.7",             "0.6",  "2.2",  32),
+        new("glm-4.5-airx",        "1.1",  "4.5",  40),
+        new("glm-5",               "1",    "3.2",  41),
+        new("glm-5-code",          "1.2",  "5",    42),
+        new("glm-4.5-x",           "2.2",  "8.9",  50),
+    ];
+
+    private static readonly Dictionary<string, ModelInfo> _catalogLookup =
+        ModelCatalog.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Get models for display in select dialog, sorted by price.</summary>
+    public (string Id, string Display)[] GetModelsForDisplay()
     {
-        if (!forceRefresh && _cachedBalance != null && (DateTime.Now - _balanceFetchedAt).TotalSeconds < 60)
-            return _cachedBalance;
-
-        var apiKey = AddIn.Auth.LoadApiKey().Trim();
-        apiKey = new string(apiKey.Where(c => c >= 0x20 && c <= 0x7E).ToArray());
-        if (string.IsNullOrEmpty(apiKey)) return "—";
-
+        // Fetch from API + merge known models
+        var apiModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
-            var jwt = GenerateJwt(apiKey);
-            var token = jwt ?? apiKey; // fallback to raw key if JWT fails
-
-            using var request = new HttpRequestMessage(HttpMethod.Post, BalanceUrl);
-            request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
-            request.Headers.Add("Authorization", $"Bearer {token}");
-            var response = _http.Send(request);
-            var body = response.Content.ReadAsStringAsync().Result;
-            AddIn.Logger.Debug($"Balance response: {body[..Math.Min(200, body.Length)]}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                var json = JsonNode.Parse(body);
-                var balance = json?["data"]?["balance"]?.GetValue<decimal>()
-                    ?? json?["data"]?["available"]?.GetValue<decimal>();
-                if (balance.HasValue)
-                {
-                    _cachedBalance = $"{balance.Value:F2} CNY";
-                    _balanceFetchedAt = DateTime.Now;
-                    return _cachedBalance;
-                }
-                // Try to extract any numeric from data
-                var dataStr = json?["data"]?.ToJsonString() ?? body;
-                _cachedBalance = dataStr.Length > 40 ? dataStr[..40] + "..." : dataStr;
-                _balanceFetchedAt = DateTime.Now;
-                return _cachedBalance;
-            }
-            AddIn.Logger.Debug($"Balance error: HTTP {(int)response.StatusCode}");
-            return "—";
+            var fetched = GetAvailableModels();
+            foreach (var m in fetched) apiModels.Add(m);
         }
-        catch (Exception ex)
+        catch { }
+        // Always include free flash models (API doesn't list them)
+        apiModels.Add("glm-4.7-flash");
+        apiModels.Add("glm-4.5-flash");
+
+        var result = new List<(string Id, string Display)>();
+        // First add catalog models in order
+        foreach (var cat in ModelCatalog)
         {
-            AddIn.Logger.Debug($"Balance fetch error: {ex.Message}");
-            return "—";
+            if (apiModels.Remove(cat.Id) || true) // show all catalog models
+                result.Add((cat.Id, cat.DisplayLine));
         }
+        // Add any API models not in catalog
+        foreach (var id in apiModels.OrderBy(x => x))
+        {
+            result.Add((id, $"❓  {id}   —   unknown pricing"));
+        }
+        return result.ToArray();
     }
-
-    public void InvalidateBalanceCache() { _cachedBalance = null; }
 
     // ═══ Models API ═══
     private string[]? _cachedModels;
@@ -266,5 +242,6 @@ public class ZaiApiService
         return DefaultModels;
     }
 
-    public static readonly string[] DefaultModels = ["glm-4.5-air", "glm-4.5", "glm-4.6", "glm-4.7", "glm-5"];
+    public static readonly string[] DefaultModels =
+        ["glm-4.7-flash", "glm-4.5-flash", "glm-4.5-air", "glm-4.5", "glm-4.6", "glm-4.7", "glm-5"];
 }

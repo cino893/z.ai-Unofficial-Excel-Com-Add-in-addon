@@ -89,8 +89,8 @@ public class RibbonController : ExcelRibbon
         if (!AddIn.Auth.IsLoggedIn())
             return AddIn.I18n.T("ribbon.not_logged");
 
-        var balance = AddIn.Api.GetBalance();
-        return AddIn.I18n.T("ribbon.logged_in") + " | " + balance;
+        var model = AddIn.Auth.LoadModel();
+        return AddIn.I18n.T("ribbon.logged_in") + " | " + model;
     }
 
     // ═══ Enabled states ═══
@@ -131,23 +131,21 @@ public class RibbonController : ExcelRibbon
         catch { }
 
         AddIn.Auth.ShowLogin();
-        AddIn.Api.InvalidateBalanceCache();
         _ribbon?.Invalidate();
     }
 
     public void OnLogout(IRibbonControl control)
     {
         AddIn.Auth.ShowLogout();
-        AddIn.Api.InvalidateBalanceCache();
         _ribbon?.Invalidate();
     }
 
     public void OnSelectModel(IRibbonControl control)
     {
         var current = AddIn.Auth.LoadModel();
-        var models = AddIn.Api.GetAvailableModels();
-        var items = models.Select(m => m).ToArray();
-        var keyMap = models.ToDictionary(m => m, m => m);
+        var models = AddIn.Api.GetModelsForDisplay();
+        var items = models.Select(m => m.Display).ToArray();
+        var keyMap = models.ToDictionary(m => m.Id, m => m.Display);
 
         var dlg = new UI.WpfSelectDialog(
             AddIn.I18n.T("model.title"),

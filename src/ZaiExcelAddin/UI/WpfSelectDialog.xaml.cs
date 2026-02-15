@@ -44,7 +44,7 @@ public partial class WpfSelectDialog : Window
         {
             foreach (var kv in _keyToDisplay)
             {
-                if (SelectedValue.Contains(kv.Key))
+                if (SelectedValue.Contains(kv.Key, StringComparison.OrdinalIgnoreCase))
                 {
                     SelectedKey = kv.Key;
                     break;
