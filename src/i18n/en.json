@@ -30,7 +30,7 @@
   "model.current": "Current model: {0}",
   "model.title": "Select Model",
   "model.changed": "Model changed to: {0}",
-  "about.text": "Z.AI Excel Add-in\nVersion 2.0\n\nAI-powered assistant for Microsoft Excel.\nPowered by ZhipuAI GLM models.\n\n⚠️ DISCLAIMER:\nThis is an UNOFFICIAL add-in.\nNot affiliated with, endorsed by, or\nassociated with z.ai / Zhipu AI in any way.\nAll rights belong to their respective owners.",
+  "about.text": "Z.AI Excel Add-in\nVersion 5.0\n\nAI-powered assistant for Microsoft Excel.\nPowered by ZhipuAI GLM models.\n\n⚠️ DISCLAIMER:\nThis is an UNOFFICIAL add-in.\nNot affiliated with, endorsed by, or\nassociated with z.ai / Zhipu AI in any way.\nAll rights belong to their respective owners.",
   "about.title": "About Z.AI",
   "conv.status_round": "Round {0}",
   "conv.status_exec": "Executing tool: {0}",

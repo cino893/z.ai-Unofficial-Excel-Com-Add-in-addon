@@ -30,7 +30,7 @@
   "model.current": "Поточна модель: {0}",
   "model.title": "Вибір моделі",
   "model.changed": "Модель змінено на: {0}",
-  "about.text": "Z.AI Додаток для Excel\nВерсія 2.0\n\nAI-асистент для Microsoft Excel.\nПрацює на моделях ZhipuAI GLM.\n\n⚠️ ЗАСТЕРЕЖЕННЯ:\nЦе НЕОФІЦІЙНИЙ додаток.\nНе пов'язаний з z.ai / Zhipu AI.",
+  "about.text": "Z.AI Додаток для Excel\nВерсія 5.0\n\nAI-асистент для Microsoft Excel.\nПрацює на моделях ZhipuAI GLM.\n\n⚠️ ЗАСТЕРЕЖЕННЯ:\nЦе НЕОФІЦІЙНИЙ додаток.\nНе пов'язаний з z.ai / Zhipu AI.",
   "about.title": "Про Z.AI",
   "conv.status_round": "Раунд {0}",
   "conv.status_exec": "Виконання інструменту: {0}",

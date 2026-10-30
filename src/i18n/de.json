@@ -30,7 +30,7 @@
   "model.current": "Aktuelles Modell: {0}",
   "model.title": "Modell auswählen",
   "model.changed": "Modell geändert zu: {0}",
-  "about.text": "Z.AI Excel Add-in\nVersion 2.0\n\nKI-Assistent für Microsoft Excel.\nBetrieben mit ZhipuAI GLM-Modellen.\n\n⚠️ HAFTUNGSAUSSCHLUSS:\nDies ist ein INOFFIZIELLES Add-in.\nNicht verbunden mit z.ai / Zhipu AI.",
+  "about.text": "Z.AI Excel Add-in\nVersion 5.0\n\nKI-Assistent für Microsoft Excel.\nBetrieben mit ZhipuAI GLM-Modellen.\n\n⚠️ HAFTUNGSAUSSCHLUSS:\nDies ist ein INOFFIZIELLES Add-in.\nNicht verbunden mit z.ai / Zhipu AI.",
   "about.title": "Über Z.AI",
   "conv.status_round": "Runde {0}",
   "conv.status_exec": "Werkzeug wird ausgeführt: {0}",

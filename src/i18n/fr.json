@@ -30,7 +30,7 @@
   "model.current": "Modèle actuel : {0}",
   "model.title": "Sélection du modèle",
   "model.changed": "Modèle changé en : {0}",
-  "about.text": "Z.AI Complément Excel\nVersion 2.0\n\nAssistant IA pour Microsoft Excel.\nAlimenté par les modèles ZhipuAI GLM.\n\n⚠️ AVERTISSEMENT:\nCeci est un complément NON OFFICIEL.\nNon affilié à z.ai / Zhipu AI.",
+  "about.text": "Z.AI Complément Excel\nVersion 5.0\n\nAssistant IA pour Microsoft Excel.\nAlimenté par les modèles ZhipuAI GLM.\n\n⚠️ AVERTISSEMENT:\nCeci est un complément NON OFFICIEL.\nNon affilié à z.ai / Zhipu AI.",
   "about.title": "À propos de Z.AI",
   "conv.status_round": "Tour {0}",
   "conv.status_exec": "Exécution de l'outil : {0}",
