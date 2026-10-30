@@ -83,6 +83,8 @@ ImportModule "modI18n.bas"
 ImportModule "modAuth.bas"
 ImportModule "modZaiAPI.bas"
 ImportModule "modExcelSkills.bas"
+ImportModule "modExcelSkillsOps.bas"
+ImportModule "modExcelSkillsPivot.bas"
 ImportModule "modConversation.bas"
 ImportModule "modRibbon.bas"
 
@@ -119,6 +121,8 @@ On Error GoTo 0
 
 wb.Close False
 excel.Quit
+
+CopyI18nFolder
 
 WScript.Echo ""
 WScript.Echo "============================================="
@@ -157,6 +161,25 @@ Sub ImportModule(fileName)
         modulesImported = modulesImported + 1
     End If
     On Error GoTo 0
+End Sub
+
+' ============================================================================
+' Helper: copy i18n JSON next to the built .xlam so runtime T() can load them
+' ============================================================================
+Sub CopyI18nFolder()
+    Dim src, dstParent, dst
+    src = fso.BuildPath(scriptDir, "i18n")
+    dstParent = fso.GetParentFolderName(outputPath)
+    dst = fso.BuildPath(dstParent, "i18n")
+    If Not fso.FolderExists(src) Then
+        WScript.Echo "UWAGA: Brak folderu i18n: " & src
+        Exit Sub
+    End If
+    If LCase(src) <> LCase(dst) Then
+        If fso.FolderExists(dst) Then fso.DeleteFolder dst, True
+        fso.CopyFolder src, dst
+    End If
+    WScript.Echo "i18n: " & dst
 End Sub
 
 ' ============================================================================
@@ -252,12 +275,37 @@ Sub CreateChatForm(proj)
     ' Clear button
     Set ctrl = frm.Designer.Controls.Add("Forms.CommandButton.1", "btnClear")
     With ctrl
-        .Left = 140
+        .Left = 128
         .Top = 570
-        .Width = 100
+        .Width = 90
         .Height = 25
         .Caption = "Wyczysc"
         .Font.Size = 8
+    End With
+    
+    ' Stop button (same slot as Send, hidden until processing)
+    Set ctrl = frm.Designer.Controls.Add("Forms.CommandButton.1", "btnStop")
+    With ctrl
+        .Left = 418
+        .Top = 512
+        .Width = 82
+        .Height = 50
+        .Caption = "Stop"
+        .Font.Size = 10
+        .Font.Bold = True
+        .Visible = False
+    End With
+    
+    ' Continue button
+    Set ctrl = frm.Designer.Controls.Add("Forms.CommandButton.1", "btnContinue")
+    With ctrl
+        .Left = 226
+        .Top = 570
+        .Width = 110
+        .Height = 25
+        .Caption = "Continue"
+        .Font.Size = 8
+        .Visible = False
     End With
     
     ' Add form code
@@ -291,6 +339,10 @@ Sub CreateChatForm(proj)
     code = code & "    btnSend.Caption = modI18n.T(""chat.send"")" & vbCrLf
     code = code & "    btnNew.Caption = modI18n.T(""chat.new"")" & vbCrLf
     code = code & "    btnClear.Caption = modI18n.T(""chat.clear"")" & vbCrLf
+    code = code & "    btnStop.Caption = modI18n.T(""chat.stop"")" & vbCrLf
+    code = code & "    btnContinue.Caption = modI18n.T(""chat.continue"")" & vbCrLf
+    code = code & "    btnStop.Visible = False" & vbCrLf
+    code = code & "    btnContinue.Visible = False" & vbCrLf
     code = code & "    lblStatus.Caption = modI18n.T(""chat.ready"")" & vbCrLf
     code = code & "    AppendChat ""Z.AI"", modI18n.T(""chat.welcome"")" & vbCrLf
     code = code & "    modDebug.LogInfo ""Chat form opened""" & vbCrLf
@@ -356,10 +408,16 @@ Sub CreateChatForm(proj)
     code = code & "    btnSend.Top = txtInput.Top" & vbCrLf
     code = code & "    btnSend.Width = sendW" & vbCrLf
     code = code & "    btnSend.Height = inputH" & vbCrLf
+    code = code & "    btnStop.Left = btnSend.Left" & vbCrLf
+    code = code & "    btnStop.Top = btnSend.Top" & vbCrLf
+    code = code & "    btnStop.Width = sendW" & vbCrLf
+    code = code & "    btnStop.Height = inputH" & vbCrLf
     code = code & "    btnNew.Left = pad" & vbCrLf
     code = code & "    btnNew.Top = txtInput.Top + inputH + 4" & vbCrLf
-    code = code & "    btnClear.Left = btnNew.Left + btnNew.Width + 10" & vbCrLf
+    code = code & "    btnClear.Left = btnNew.Left + btnNew.Width + 8" & vbCrLf
     code = code & "    btnClear.Top = btnNew.Top" & vbCrLf
+    code = code & "    btnContinue.Left = btnClear.Left + btnClear.Width + 8" & vbCrLf
+    code = code & "    btnContinue.Top = btnNew.Top" & vbCrLf
     code = code & "    On Error GoTo 0" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
@@ -367,10 +425,29 @@ Sub CreateChatForm(proj)
     code = code & "    SendMessage" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
+    code = code & "Private Sub btnStop_Click()" & vbCrLf
+    code = code & "    modConversation.CancelConversation" & vbCrLf
+    code = code & "End Sub" & vbCrLf
+    code = code & "" & vbCrLf
+    code = code & "Private Sub btnContinue_Click()" & vbCrLf
+    code = code & "    If modConversation.IsProcessing() Then Exit Sub" & vbCrLf
+    code = code & "    If Not modConversation.CanContinue() Then Exit Sub" & vbCrLf
+    code = code & "    btnContinue.Visible = False" & vbCrLf
+    code = code & "    AppendChat ""Z.AI"", modI18n.T(""chat.continuing"")" & vbCrLf
+    code = code & "    SetProcessing True" & vbCrLf
+    code = code & "    DoEvents" & vbCrLf
+    code = code & "    Dim response As String" & vbCrLf
+    code = code & "    response = modConversation.ContinueConversation()" & vbCrLf
+    code = code & "    AppendChat ""Z.AI"", response" & vbCrLf
+    code = code & "    SetProcessing False" & vbCrLf
+    code = code & "    txtInput.SetFocus" & vbCrLf
+    code = code & "End Sub" & vbCrLf
+    code = code & "" & vbCrLf
     code = code & "Private Sub btnNew_Click()" & vbCrLf
     code = code & "    modConversation.ResetConversation" & vbCrLf
     code = code & "    txtChat.Text = """"" & vbCrLf
     code = code & "    m_conversationStarted = False" & vbCrLf
+    code = code & "    btnContinue.Visible = False" & vbCrLf
     code = code & "    AppendChat ""Z.AI"", modI18n.T(""chat.new_started"")" & vbCrLf
     code = code & "    lblStatus.Caption = modI18n.T(""chat.ready"")" & vbCrLf
     code = code & "End Sub" & vbCrLf
@@ -386,6 +463,21 @@ Sub CreateChatForm(proj)
     code = code & "    End If" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
+    code = code & "Private Sub SetProcessing(ByVal processing As Boolean)" & vbCrLf
+    code = code & "    txtInput.Enabled = Not processing" & vbCrLf
+    code = code & "    btnSend.Visible = Not processing" & vbCrLf
+    code = code & "    btnSend.Enabled = Not processing" & vbCrLf
+    code = code & "    btnStop.Visible = processing" & vbCrLf
+    code = code & "    If processing Then" & vbCrLf
+    code = code & "        lblStatus.Caption = modI18n.T(""chat.processing"")" & vbCrLf
+    code = code & "        btnContinue.Visible = False" & vbCrLf
+    code = code & "    Else" & vbCrLf
+    code = code & "        lblStatus.Caption = modI18n.TFormat(""chat.ready_count"", modConversation.GetMessageCount())" & vbCrLf
+    code = code & "        btnContinue.Visible = modConversation.CanContinue()" & vbCrLf
+    code = code & "    End If" & vbCrLf
+    code = code & "    DoEvents" & vbCrLf
+    code = code & "End Sub" & vbCrLf
+    code = code & "" & vbCrLf
     code = code & "Private Sub SendMessage()" & vbCrLf
     code = code & "    Dim userText As String" & vbCrLf
     code = code & "    userText = Trim(txtInput.Text)" & vbCrLf
@@ -398,20 +490,14 @@ Sub CreateChatForm(proj)
     code = code & "" & vbCrLf
     code = code & "    AppendChat ""Ty"", userText" & vbCrLf
     code = code & "    txtInput.Text = """"" & vbCrLf
-    code = code & "" & vbCrLf
-    code = code & "    txtInput.Enabled = False" & vbCrLf
-    code = code & "    btnSend.Enabled = False" & vbCrLf
-    code = code & "    lblStatus.Caption = modI18n.T(""chat.processing"")" & vbCrLf
+    code = code & "    SetProcessing True" & vbCrLf
     code = code & "    DoEvents" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "    Dim response As String" & vbCrLf
     code = code & "    response = modConversation.SendUserMessage(userText)" & vbCrLf
     code = code & "" & vbCrLf
     code = code & "    AppendChat ""Z.AI"", response" & vbCrLf
-    code = code & "" & vbCrLf
-    code = code & "    txtInput.Enabled = True" & vbCrLf
-    code = code & "    btnSend.Enabled = True" & vbCrLf
-    code = code & "    lblStatus.Caption = modI18n.TFormat(""chat.ready_count"", modConversation.GetMessageCount())" & vbCrLf
+    code = code & "    SetProcessing False" & vbCrLf
     code = code & "    txtInput.SetFocus" & vbCrLf
     code = code & "End Sub" & vbCrLf
     code = code & "" & vbCrLf
@@ -494,7 +580,7 @@ Sub AddThisWorkbookCode(proj)
     code = code & "    On Error Resume Next" & vbCrLf
     code = code & "    modDebug.InitDebug" & vbCrLf
     code = code & "    modI18n.InitI18n" & vbCrLf
-    code = code & "    modDebug.LogInfo ""Z.AI Add-in loaded""" & vbCrLf
+    code = code & "    modDebug.LogInfo ""Z.AI Add-in v5.0 loaded (VBA)""" & vbCrLf
     code = code & "    modRibbon.CreateZaiMenu" & vbCrLf
     code = code & "    On Error GoTo 0" & vbCrLf
     code = code & "End Sub" & vbCrLf

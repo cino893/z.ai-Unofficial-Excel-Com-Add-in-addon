@@ -364,3 +364,132 @@ Public Function DictGet(ByVal dict As Object, ByVal key As String, Optional ByVa
         DictGet = defaultVal
     End If
 End Function
+
+' --- Optional JSON argument helpers (missing keys never raise) ---
+Public Function ArgHas(ByVal args As Object, ByVal key As String) As Boolean
+    ArgHas = False
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    ArgHas = args.Exists(key)
+End Function
+
+Public Function ArgStr(ByVal args As Object, ByVal key As String, Optional ByVal fallback As String = "") As String
+    ArgStr = fallback
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    If Not args.Exists(key) Then Exit Function
+    Dim v As Variant
+    v = args(key)
+    If Err.Number <> 0 Then Exit Function
+    If IsNull(v) Or IsEmpty(v) Then Exit Function
+    If IsObject(v) Then Exit Function
+    ArgStr = CStr(v)
+End Function
+
+Public Function ArgLng(ByVal args As Object, ByVal key As String, Optional ByVal fallback As Long = 0) As Long
+    ArgLng = fallback
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    If Not args.Exists(key) Then Exit Function
+    Dim v As Variant
+    v = args(key)
+    If Err.Number <> 0 Then Exit Function
+    If IsNull(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbBoolean Then
+        ArgLng = IIf(v, 1, 0)
+        Exit Function
+    End If
+    If VarType(v) = vbString Then
+        Dim n As Double
+        If TryParseInvNumber(CStr(v), n) Then ArgLng = CLng(n)
+        Exit Function
+    End If
+    ArgLng = CLng(v)
+End Function
+
+Public Function ArgDbl(ByVal args As Object, ByVal key As String, Optional ByVal fallback As Double = 0) As Double
+    ArgDbl = fallback
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    If Not args.Exists(key) Then Exit Function
+    Dim v As Variant
+    v = args(key)
+    If Err.Number <> 0 Then Exit Function
+    If IsNull(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbString Then
+        Dim n As Double
+        If TryParseInvNumber(CStr(v), n) Then ArgDbl = n
+        Exit Function
+    End If
+    ArgDbl = CDbl(v)
+End Function
+
+Public Function ArgBool(ByVal args As Object, ByVal key As String, Optional ByVal fallback As Boolean = False) As Boolean
+    ArgBool = fallback
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    If Not args.Exists(key) Then Exit Function
+    Dim v As Variant
+    v = args(key)
+    If Err.Number <> 0 Then Exit Function
+    If IsNull(v) Or IsEmpty(v) Then Exit Function
+    If VarType(v) = vbBoolean Then
+        ArgBool = CBool(v)
+        Exit Function
+    End If
+    If VarType(v) = vbString Then
+        Dim s As String
+        s = LCase$(Trim$(CStr(v)))
+        If s = "true" Or s = "1" Or s = "yes" Then
+            ArgBool = True
+        ElseIf s = "false" Or s = "0" Or s = "no" Then
+            ArgBool = False
+        End If
+        Exit Function
+    End If
+    ArgBool = CBool(v)
+End Function
+
+Public Function ArgColl(ByVal args As Object, ByVal key As String) As Collection
+    Set ArgColl = Nothing
+    On Error Resume Next
+    If args Is Nothing Then Exit Function
+    If Not args.Exists(key) Then Exit Function
+    If IsObject(args(key)) Then
+        If TypeName(args(key)) = "Collection" Then Set ArgColl = args(key)
+    End If
+End Function
+
+' Parse a number using '.' as decimal separator (InvariantCulture equivalent).
+Public Function TryParseInvNumber(ByVal s As String, ByRef outNum As Double) As Boolean
+    Dim t As String
+    t = Trim$(s)
+    If t = "" Then Exit Function
+    
+    Dim i As Long, ch As String
+    Dim startPos As Long
+    startPos = 1
+    If Left$(t, 1) = "+" Or Left$(t, 1) = "-" Then startPos = 2
+    If startPos > Len(t) Then Exit Function
+    
+    Dim hasDigit As Boolean, hasDot As Boolean, hasE As Boolean
+    For i = startPos To Len(t)
+        ch = Mid$(t, i, 1)
+        If ch >= "0" And ch <= "9" Then
+            hasDigit = True
+        ElseIf ch = "." And Not hasDot And Not hasE Then
+            hasDot = True
+        ElseIf (ch = "e" Or ch = "E") And hasDigit And Not hasE Then
+            hasE = True
+            hasDigit = False
+            If i < Len(t) Then
+                If Mid$(t, i + 1, 1) = "+" Or Mid$(t, i + 1, 1) = "-" Then i = i + 1
+            End If
+        Else
+            Exit Function
+        End If
+    Next i
+    If Not hasDigit Then Exit Function
+    outNum = Val(t)
+    TryParseInvNumber = True
+End Function

@@ -68,6 +68,13 @@ Public Sub CreateZaiMenu()
     btnLang.FaceId = 224
     btnLang.OnAction = "ShowLanguageSelector"
     
+    Dim btnTokens As CommandBarButton
+    Set btnTokens = zaiMenu.Controls.Add(Type:=msoControlButton)
+    btnTokens.Caption = T("menu.add_tokens")
+    If btnTokens.Caption = "menu.add_tokens" Then btnTokens.Caption = "Add Tokens"
+    btnTokens.FaceId = 204
+    btnTokens.OnAction = "ShowAddTokens"
+    
     ' --- Separator + Debug ---
     Dim btnViewLog As CommandBarButton
     Set btnViewLog = zaiMenu.Controls.Add(Type:=msoControlButton)
@@ -167,17 +174,18 @@ Public Sub ShowModelSelector()
     Dim currentModel As String
     currentModel = LoadModel()
     
+    Dim prompt As String
+    prompt = T("model.prompt")
+    prompt = prompt & vbCrLf & vbCrLf & GetModelsPromptList()
+    prompt = prompt & vbCrLf & vbCrLf & TFormat("model.current", currentModel)
+    
     Dim model As String
-    model = InputBox( _
-        T("model.prompt") & vbCrLf & vbCrLf & _
-        T("model.current") & currentModel, _
-        T("model.title"), _
-        currentModel)
+    model = InputBox(prompt, T("model.title"), currentModel)
     
     If model = "" Then Exit Sub
     
-    SaveModel Trim(model)
-    MsgBox T("model.changed") & Trim(model), vbInformation, "Z.AI"
+    SaveModel Trim$(model)
+    MsgBox TFormat("model.changed", Trim$(model)), vbInformation, "Z.AI"
 End Sub
 
 ' --- Show Language Selector ---
@@ -187,22 +195,29 @@ Public Sub ShowLanguageSelector()
     
     Dim choice As String
     choice = InputBox( _
-        "Select language / Wybierz jezyk:" & vbCrLf & vbCrLf & _
-        "  pl - Polski" & vbCrLf & _
-        "  en - English" & vbCrLf & vbCrLf & _
-        "Current / Aktualny: " & current, _
+        T("lang.select_prompt") & vbCrLf & vbCrLf & _
+        SupportedLangList() & vbCrLf & vbCrLf & _
+        "Current: " & current, _
         T("lang.title"), _
         current)
     
     If choice = "" Then Exit Sub
     
-    choice = LCase(Trim(choice))
-    If choice = "pl" Or choice = "en" Then
+    choice = LCase$(Trim$(choice))
+    If IsSupportedLang(choice) Then
         SetLanguage choice
-        ' Recreate menu with new language
         CreateZaiMenu
         MsgBox T("lang.changed"), vbInformation, T("lang.title")
     End If
+End Sub
+
+Public Sub ShowAddTokens()
+    On Error Resume Next
+    ThisWorkbook.FollowHyperlink "https://z.ai/manage-apikey/billing"
+    If Err.Number <> 0 Then
+        CreateObject("WScript.Shell").Run "https://z.ai/manage-apikey/billing"
+    End If
+    On Error GoTo 0
 End Sub
 
 ' --- Show About ---
