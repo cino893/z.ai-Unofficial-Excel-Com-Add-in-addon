@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    name: Offline parity tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run offline tests
+        run: |
+          python3 tests/test_tool_parity.py
+          python3 tests/test_i18n.py
+          python3 tests/test_vwb.py
+        # Live test_api.py is skipped unless ZAI_API_KEY is set; do not fail CI without a key.
+        # VBA .xlam cannot be built on GitHub (requires Excel COM). Excel COM tests are skipped.
+
+  build:
+    name: Publish Excel-DNA add-in
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      # ExcelDna.AddIn 1.9.0 (SDK-style net8.0-windows) packs after publish:
+      #   src/publish/ZaiExcelAddin-AddIn64-packed.xll   (64-bit)
+      #   src/publish/ZaiExcelAddin-AddIn-packed.xll     (32-bit, if produced)
+      # Do NOT fail this job if Excel is absent — we only compile/pack the .xll.
+      - name: Publish COM add-in
+        run: dotnet publish src/ZaiExcelAddin.csproj -c Release -o src/publish
+      - name: Upload packed XLL artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packed-xll
+          path: |
+            src/publish/ZaiExcelAddin-AddIn64-packed.xll
+            src/publish/ZaiExcelAddin-AddIn-packed.xll
+            **/*packed.xll
+          if-no-files-found: warn
+          retention-days: 14
