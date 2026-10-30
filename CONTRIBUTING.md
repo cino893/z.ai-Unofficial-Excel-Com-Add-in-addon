@@ -31,7 +31,7 @@ Enhancement suggestions are welcome! Please provide:
 
 ### Pull Requests
 
-1. **Fork the repository** and create your branch from `main`
+1. **Fork the repository** and create your branch from `master`
 2. **Make your changes** following the coding guidelines below
 3. **Test your changes** thoroughly
 4. **Update documentation** if needed
@@ -58,11 +58,13 @@ The output will be in `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddI
 
 ### Project Structure
 
-- `src/` - Main .NET 8 COM Add-in source code
+- `src/` - Main .NET 8 COM Add-in source code (recommended install: packed `.xll`)
 - `src/Services/` - Core services (API, Excel skills, i18n, auth)
 - `src/UI/` - WPF user interface components
 - `src/Models/` - Data models
-- `legacy/` - Deprecated VBA version (v1.0)
+- `legacy/` - Maintained VBA add-in with the same 31 Excel tools and conversation loop as COM (build with `cscript legacy\build.vbs`)
+- `tests/` - Offline parity / virtual-workbook tests (no Excel required)
+- `.github/workflows/` - CI (`ci.yml`) and GitHub Releases (`release.yml`)
 
 ## Coding Guidelines
 
@@ -85,11 +87,12 @@ The output will be in `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddI
 
 When adding new Excel automation skills:
 
-1. Add method to `ExcelSkillService.cs` (or relevant partial class)
-2. Include XML documentation comments
-3. Return structured results (success/error messages)
+1. Add the tool to `ExcelSkillService.cs` (`GetToolDefinitions` + `ExecuteInner`) and the matching partial class
+2. Port the same tool **name**, JSON fields, and defaults into `legacy/modExcelSkills.bas` (definitions) and `modExcelSkillsOps.bas` / `modExcelSkillsPivot.bas` (implementation)
+3. Return structured JSON (success / error / `hint` on COM failures)
 4. Handle COM exceptions gracefully
-5. Test with various Excel scenarios
+5. Run `python3 tests/test_tool_parity.py` — COM and VBA name sets must stay equal
+6. Extend `tests/test_vwb.py` for the new tool
 
 ### Localization
 
@@ -99,10 +102,10 @@ When adding new Excel automation skills:
 
 ## Testing
 
-- **Manual testing** is currently the primary method
-- Test with different Excel versions
-- Test with various workbook formats (.xlsx, .xlsm, .xlsb)
-- Verify AI responses are appropriate
+- Offline (no Excel, no API key): `python3 tests/test_tool_parity.py`, `python3 tests/test_i18n.py`, `python3 tests/test_vwb.py`
+- Live API tests: `ZAI_API_KEY=... python3 test_api.py` (skipped with exit 0 when the env var is unset)
+- Manual testing in Excel for COM (`.xll`) and VBA (`cscript legacy\build.vbs`)
+- Test with different Excel versions and workbook formats (.xlsx, .xlsm, .xlsb)
 - Check for COM object leaks (use Task Manager)
 
 ## Git Commit Messages

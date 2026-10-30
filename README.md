@@ -20,6 +20,8 @@
 - **[⬇ Download latest .xll](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)**
 - [All releases](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
 
+GitHub Releases attach the packed 64-bit (and 32-bit, when produced) `.xll` files via Actions (`release.yml`). Current product version is **5.0.0**.
+
 ## Installation
 
 1. Download the `.xll` file above
@@ -56,7 +58,7 @@
 
 ✨ **Key Highlights:**
 
-- 🤖 **AI-Powered Automation** — 28 Excel tools for reading, writing, formatting, charting, and more
+- 🤖 **AI-Powered Automation** — 31 Excel tools for reading, writing, formatting, charting, pivots, and more
 - 💬 **Side-Panel Chat Interface** — Beautiful WPF interface with typing animation and emoji support
 - 🆓 **Free to Use** — Open-source MIT license, works with Z.AI's free tier models
 - 🌍 **Multilingual** — 8 languages supported (EN, PL, DE, FR, ES, UK, ZH, JA)
@@ -67,22 +69,24 @@
 
 | Tool | Description |
 |------|-------------|
-| `read_cell` / `write_cell` | Read/write a single cell |
-| `read_range` / `write_range` | Read/write a 2D range |
-| `get_sheet_info` | Sheet dimensions, headers, used range |
-| `get_workbook_info` | Workbook sheets, file path |
-| `format_range` | Font, colors, borders, alignment, merge |
-| `insert_formula` | Insert Excel formulas |
+| `read_cell` / `write_cell` | Read/write a single cell (`write_cell` stores numbers as numeric values) |
+| `read_range` / `write_range` | Read/write a 2D range (`read_range` caps at 500 rows) |
+| `get_sheet_info` | Sheet dimensions, headers, sample data, charts/pivots/filters flags |
+| `get_workbook_info` | Workbook sheets, file path, pivot cache count |
+| `format_range` | Font (including underline / font name), colors, borders, alignment, merge |
+| `insert_formula` | Insert Excel formulas with optional `fill_to` AutoFill |
 | `sort_range` | Sort data by column |
 | `add_sheet` | Add a new worksheet |
 | `delete_rows` / `insert_rows` | Delete/insert rows |
+| `delete_columns` / `insert_columns` | Delete/insert columns |
 | `create_chart` | Create charts (column, bar, line, pie, scatter, area) |
 | `delete_chart` / `list_charts` | Delete or list charts |
 | `create_pivot_table` | Create PivotTable with row/column/value fields |
-| `move_table` | Move data range or PivotTable to another sheet |
+| `move_pivot_table` | Move a PivotTable (Location, then PivotCache recreate) |
+| `modify_pivot_table` | Configure row/column/value/page fields on an existing pivot |
 | `auto_filter` | Apply or clear AutoFilter on a range |
 | `find_replace` | Find and replace values in a sheet |
-| `conditional_format` | Add conditional formatting (highlight, color scale, data bar) |
+| `conditional_format` | Color scale, data bars, icon set, formula, cell value, and more |
 | `copy_range` | Copy a range to another location (values only or with formatting) |
 | `rename_sheet` / `delete_sheet` | Rename or delete a worksheet |
 | `freeze_panes` | Freeze/unfreeze panes at a specific cell |
@@ -100,33 +104,46 @@ cd src
 dotnet build -c Release
 ```
 
-Output: `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+Output (Excel-DNA 1.9.0 packed XLL): `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`  
+CI uses `dotnet publish src/ZaiExcelAddin.csproj -c Release -o src/publish`.
 
 ## Project Structure
 
 ```
 dodatek-z-ai-opus/
-├── src/                            # .NET 8 COM Add-in (ExcelDNA)
-│   ├── ZaiExcelAddin.csproj        # C# project file
+├── src/                            # .NET 8 COM Add-in (ExcelDNA) — recommended
+│   ├── ZaiExcelAddin.csproj        # C# project file (version 5.0.0)
 │   ├── AddIn.cs                    # Entry point (IExcelAddIn)
 │   ├── RibbonController.cs         # Ribbon UI + Custom Task Pane
+│   ├── i18n/                       # 8 language JSON files
 │   ├── Models/
-│   │   └── ChatMessage.cs          # Chat message model
+│   │   └── ChatMessage.cs
 │   ├── Services/
-│   │   ├── AuthService.cs          # API key storage (Windows Registry)
-│   │   ├── ConversationService.cs  # Tool-calling loop + loop detection
-│   │   ├── DebugLogger.cs          # File logging
-│   │   ├── ExcelSkillService.cs    # 28 Excel tools
-│   │   ├── I18nService.cs          # 8-language i18n
-│   │   └── ZaiApiService.cs        # Z.AI HTTP client + model catalog
+│   │   ├── AuthService.cs
+│   │   ├── ConversationService.cs  # Tool-calling loop (max 45 rounds)
+│   │   ├── DebugLogger.cs
+│   │   ├── ExcelSkillService*.cs   # 31 Excel tools
+│   │   ├── I18nService.cs
+│   │   └── ZaiApiService.cs
 │   └── UI/
-│       ├── ChatPanel.xaml/.cs      # WPF chat panel
-│       ├── ChatPaneHost.cs         # WinForms host for CTP (COM-visible)
-│       ├── WpfLoginDialog.xaml/.cs # WPF login dialog
-│       └── WpfSelectDialog.xaml/.cs# WPF select dialog
-├── legacy/                         # v1.0 VBA add-in (deprecated)
-├── show-reel.gif                   # Demo animation
-├── dodatek-z-ai-opus.sln          # Solution file
+│       ├── ChatPanel.xaml/.cs
+│       ├── ChatPaneHost.cs
+│       ├── WpfLoginDialog.xaml/.cs
+│       └── WpfSelectDialog.xaml/.cs
+├── legacy/                         # VBA add-in with COM feature parity
+│   ├── build.vbs / build.ps1 / build.bat
+│   ├── modExcelSkills.bas          # Tool JSON + dispatch
+│   ├── modExcelSkillsOps.bas       # Data/sheet/format/chart/filter skills
+│   ├── modExcelSkillsPivot.bas     # Pivot tools
+│   ├── modConversation.bas
+│   ├── modZaiAPI.bas / modAuth.bas / modI18n.bas / modRibbon.bas
+│   ├── frmZaiChat.frm
+│   └── i18n/                       # Same JSON as src/i18n
+├── tests/                          # Offline parity tests (no Excel)
+├── .github/workflows/              # ci.yml + release.yml
+├── CHANGELOG.md
+├── show-reel.gif
+├── dodatek-z-ai-opus.sln
 └── README.md
 ```
 
@@ -147,13 +164,13 @@ dodatek-z-ai-opus/
                      │                    │                    │
               ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
               │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
-              │  (WPF CTP)   │    │  (28 tools)    │    │  (8 langs)    │
+              │  (WPF CTP)   │    │  (31 tools)    │    │  (8 langs)    │
               └─────────────┘    └───────────────┘    └──────────────┘
 ```
 
-## Legacy Version (v1.0 — VBA)
+## VBA build (feature parity)
 
-The original VBA add-in (`.xlam`) is preserved in the [`legacy/`](legacy/) directory. It is no longer maintained and has been fully superseded by the .NET version above. To build it: `cscript legacy\build.vbs`.
+The [`legacy/`](legacy/) directory is the **maintained VBA add-in** with the same 31 Excel tools, 45-round conversation loop, 8-language i18n, and model catalog as the .NET COM add-in. The recommended install is still the packed `.xll`. To build the VBA add-in on a machine with Excel: `cscript legacy\build.vbs` (also copies `legacy\i18n\` next to the `.xlam`).
 
 ## License
 
