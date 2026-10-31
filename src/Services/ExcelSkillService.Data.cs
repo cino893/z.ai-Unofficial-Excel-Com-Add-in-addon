@@ -32,13 +32,24 @@ public partial class ExcelSkillService
         string cell = Str(args["cell"]);
         string value = Str(args["value"]);
 
-        ws.Range[cell].Value = value;
+        JsonNode written;
+        if (double.TryParse(value, System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var num))
+        {
+            ws.Range[cell].Value = num;
+            written = JsonValue.Create(num);
+        }
+        else
+        {
+            ws.Range[cell].Value = value;
+            written = JsonValue.Create(value);
+        }
 
         var result = new JsonObject
         {
             ["success"] = true,
             ["cell"] = cell,
-            ["value"] = value
+            ["value"] = written
         };
         return result.ToJsonString();
     }

@@ -32,7 +32,7 @@ public class AddIn : IExcelAddIn
             Skills = new ExcelSkillService();
             Conversation = new ConversationService();
 
-            Logger.Info("Z.AI Add-in v2.0 loaded (.NET COM)");
+            Logger.Info("Z.AI Add-in v5.0 loaded (.NET COM)");
         }
         catch (Exception ex)
         {

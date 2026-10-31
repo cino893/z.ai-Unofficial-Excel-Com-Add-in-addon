@@ -109,6 +109,38 @@ public partial class ExcelSkillService
         return result.ToJsonString();
     }
 
+    // --- insert_columns ---
+    private string SkillInsertColumns(JsonNode args)
+    {
+        dynamic ws = GetTargetSheet(args);
+        string startCol = Str(args["start_column"]).ToUpperInvariant();
+        int count = Int(args["count"], 1);
+
+        if (string.IsNullOrEmpty(startCol))
+            return JsonSerializer.Serialize(new { error = "start_column is required (e.g. 'C')" });
+        if (count < 1) count = 1;
+
+        int startColNum = 0;
+        foreach (char c in startCol)
+            startColNum = startColNum * 26 + (c - 'A' + 1);
+        int endColNum = startColNum + count - 1;
+
+        string endCol = "";
+        int n = endColNum;
+        while (n > 0) { n--; endCol = (char)('A' + n % 26) + endCol; n /= 26; }
+
+        ws.Columns[$"{startCol}:{endCol}"].Insert(-4161); // xlToRight — single COM call
+
+        var result = new JsonObject
+        {
+            ["success"] = true,
+            ["inserted_at"] = startCol,
+            ["inserted_to"] = endCol,
+            ["count"] = count
+        };
+        return result.ToJsonString();
+    }
+
     // --- rename_sheet ---
     private string SkillRenameSheet(JsonNode args)
     {

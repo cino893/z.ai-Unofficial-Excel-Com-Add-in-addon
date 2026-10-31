@@ -1,29 +1,143 @@
 Attribute VB_Name = "modI18n"
 '==============================================================================
 ' modI18n - Internationalization Module
-' Detects Windows language, provides T() translation function
+' Loads src-identical JSON from ThisWorkbook.Path\i18n\, with embedded PL/EN fallback
 '==============================================================================
 Option Explicit
 
 Private m_lang As String
 Private m_translations As Object
 Private m_initialized As Boolean
+Private m_loadedFromJson As Boolean
+
+Public Function IsSupportedLang(ByVal code As String) As Boolean
+    Select Case LCase$(code)
+        Case "en", "pl", "de", "fr", "es", "uk", "zh", "ja"
+            IsSupportedLang = True
+        Case Else
+            IsSupportedLang = False
+    End Select
+End Function
+
+Public Function SupportedLangName(ByVal code As String) As String
+    Select Case LCase$(code)
+        Case "en": SupportedLangName = "English"
+        Case "pl": SupportedLangName = "Polski"
+        Case "de": SupportedLangName = "Deutsch"
+        Case "fr": SupportedLangName = "Francais"
+        Case "es": SupportedLangName = "Espanol"
+        Case "uk": SupportedLangName = "Ukrainian"
+        Case "zh": SupportedLangName = "Chinese"
+        Case "ja": SupportedLangName = "Japanese"
+        Case Else: SupportedLangName = code
+    End Select
+End Function
+
+Public Function SupportedLangList() As String
+    SupportedLangList = _
+        "  en - English" & vbCrLf & _
+        "  pl - Polski" & vbCrLf & _
+        "  de - Deutsch" & vbCrLf & _
+        "  fr - Francais" & vbCrLf & _
+        "  es - Espanol" & vbCrLf & _
+        "  uk - Ukrainian" & vbCrLf & _
+        "  zh - Chinese" & vbCrLf & _
+        "  ja - Japanese"
+End Function
 
 ' --- Initialize i18n ---
 Public Sub InitI18n()
     If m_initialized Then Exit Sub
     
     Set m_translations = CreateObject("Scripting.Dictionary")
+    m_loadedFromJson = False
     
-    ' Detect Windows language
-    m_lang = DetectLanguage()
+    Dim langs As Variant
+    langs = Array("en", "pl", "de", "fr", "es", "uk", "zh", "ja")
+    Dim i As Long
+    Dim loaded As Long
+    loaded = 0
+    For i = LBound(langs) To UBound(langs)
+        If LoadJsonLanguage(CStr(langs(i))) Then loaded = loaded + 1
+    Next i
+    m_loadedFromJson = (loaded > 0)
     
-    ' Load translations
-    LoadTranslations_PL
-    LoadTranslations_EN
+    If Not LangHasKeys("en") Then LoadTranslations_EN
+    If Not LangHasKeys("pl") Then LoadTranslations_PL
+    
+    Dim saved As String
+    saved = LoadSavedLanguage()
+    If saved <> "" And IsSupportedLang(saved) Then
+        m_lang = LCase$(saved)
+    Else
+        m_lang = DetectLanguage()
+    End If
     
     m_initialized = True
+    LogInfo "I18n initialized, language: " & m_lang & " json=" & m_loadedFromJson
 End Sub
+
+Private Function LangHasKeys(ByVal lang As String) As Boolean
+    LangHasKeys = False
+    If m_translations Is Nothing Then Exit Function
+    Dim k As Variant
+    For Each k In m_translations.Keys
+        If Left$(CStr(k), Len(lang) + 1) = lang & "." Then
+            LangHasKeys = True
+            Exit Function
+        End If
+    Next k
+End Function
+
+Private Function LoadJsonLanguage(ByVal lang As String) As Boolean
+    On Error GoTo Fail
+    LoadJsonLanguage = False
+    Dim folder As String, path As String
+    folder = ThisWorkbook.Path & "\i18n\"
+    path = folder & lang & ".json"
+    If Dir(path) = "" Then Exit Function
+    
+    Dim content As String
+    content = ReadUtf8File(path)
+    If content = "" Then Exit Function
+    
+    Dim parsed As Object
+    Set parsed = JsonParse(content)
+    If parsed Is Nothing Then Exit Function
+    
+    Dim k As Variant
+    For Each k In parsed.Keys
+        Dim v As Variant
+        v = parsed(k)
+        If Not IsObject(v) And Not IsNull(v) Then
+            m_translations(lang & "." & CStr(k)) = CStr(v)
+        End If
+    Next k
+    LoadJsonLanguage = True
+    Exit Function
+Fail:
+    LoadJsonLanguage = False
+End Function
+
+Private Function ReadUtf8File(ByVal path As String) As String
+    On Error GoTo Fallback
+    Dim stream As Object
+    Set stream = CreateObject("ADODB.Stream")
+    stream.Type = 2
+    stream.Charset = "UTF-8"
+    stream.Open
+    stream.LoadFromFile path
+    ReadUtf8File = stream.ReadText
+    stream.Close
+    Exit Function
+Fallback:
+    On Error Resume Next
+    Dim f As Integer
+    f = FreeFile
+    Open path For Input As #f
+    ReadUtf8File = Input$(LOF(f), f)
+    Close #f
+End Function
 
 ' --- Detect Windows language from Excel settings ---
 Private Function DetectLanguage() As String
@@ -33,12 +147,15 @@ Private Function DetectLanguage() As String
     On Error GoTo 0
     
     Select Case langCode
-        Case 1045 ' Polish
-            DetectLanguage = "pl"
-        Case 1033, 2057, 3081, 4105 ' English US/UK/AU/CA
-            DetectLanguage = "en"
+        Case 1045: DetectLanguage = "pl"
+        Case 1033, 2057, 3081, 4105: DetectLanguage = "en"
+        Case 1031: DetectLanguage = "de"
+        Case 1036: DetectLanguage = "fr"
+        Case 1034, 3082: DetectLanguage = "es"
+        Case 1058: DetectLanguage = "uk"
+        Case 2052, 1028: DetectLanguage = "zh"
+        Case 1041: DetectLanguage = "ja"
         Case Else
-            ' Fallback: check country setting
             On Error Resume Next
             Dim country As Long
             country = Application.International(xlCountrySetting)
@@ -60,9 +177,10 @@ End Function
 ' --- Set language manually ---
 Public Sub SetLanguage(ByVal langCode As String)
     If Not m_initialized Then InitI18n
-    m_lang = LCase(langCode)
+    langCode = LCase$(Trim$(langCode))
+    If Not IsSupportedLang(langCode) Then Exit Sub
+    m_lang = langCode
     
-    ' Save to registry
     On Error Resume Next
     Dim wsh As Object
     Set wsh = CreateObject("WScript.Shell")
@@ -70,25 +188,37 @@ Public Sub SetLanguage(ByVal langCode As String)
     On Error GoTo 0
 End Sub
 
-' --- Translate ---
-Public Function T(ByVal key As String) As String
+' --- Translate with optional {{placeholder}} replacements ---
+Public Function T(ByVal key As String, Optional ByVal replacements As Object = Nothing) As String
     If Not m_initialized Then InitI18n
     
+    Dim value As String
     Dim fullKey As String
     fullKey = m_lang & "." & key
     
     If m_translations.Exists(fullKey) Then
-        T = m_translations(fullKey)
+        value = m_translations(fullKey)
+    ElseIf m_translations.Exists("en." & key) Then
+        value = m_translations("en." & key)
     Else
-        ' Fallback to English
-        fullKey = "en." & key
-        If m_translations.Exists(fullKey) Then
-            T = m_translations(fullKey)
-        Else
-            ' Return key as-is
-            T = key
-        End If
+        value = key
     End If
+    
+    T = ApplyReplacements(value, replacements)
+End Function
+
+Public Function ApplyReplacements(ByVal value As String, ByVal replacements As Object) As String
+    If replacements Is Nothing Then
+        ApplyReplacements = value
+        Exit Function
+    End If
+    Dim k As Variant
+    On Error Resume Next
+    For Each k In replacements.Keys
+        value = Replace(value, "{{" & CStr(k) & "}}", CStr(replacements(k)))
+    Next k
+    On Error GoTo 0
+    ApplyReplacements = value
 End Function
 
 ' --- Check if saved language preference exists ---
@@ -162,20 +292,15 @@ Private Sub LoadTranslations_PL()
     m_translations(L & "quick.result_title") = "Z.AI - Odpowiedz"
     
     ' Model selector
-    m_translations(L & "model.prompt") = "Wybierz model z.ai:" & vbCrLf & vbCrLf & _
-        "Dostepne modele:" & vbCrLf & _
-        "  glm-4-plus  (domyslny, szybki)" & vbCrLf & _
-        "  glm-4-long  (dlugi kontekst)" & vbCrLf & _
-        "  glm-4       (standardowy)" & vbCrLf & _
-        "  glm-3-turbo (najszybszy)"
-    m_translations(L & "model.current") = "Aktualny: "
+    m_translations(L & "model.prompt") = "Wybierz model AI. glm-4.7-flash = darmowy:"
+    m_translations(L & "model.current") = "Aktualny model: {0}"
     m_translations(L & "model.title") = "Z.AI - Wybor modelu"
-    m_translations(L & "model.changed") = "Model zmieniony na: "
+    m_translations(L & "model.changed") = "Model zmieniony na: {0}"
     
     ' About
     m_translations(L & "about.text") = _
         "Z.AI Excel Add-in" & vbCrLf & _
-        "Wersja: 1.0.0" & vbCrLf & vbCrLf & _
+        "Wersja: 5.0" & vbCrLf & vbCrLf & _
         "Asystent AI zintegrowany z Microsoft Excel." & vbCrLf & _
         "Wykorzystuje platforme z.ai (Zhipu AI) do" & vbCrLf & _
         "inteligentnej edycji arkuszy kalkulacyjnych." & vbCrLf & vbCrLf & _
@@ -292,20 +417,15 @@ Private Sub LoadTranslations_EN()
     m_translations(L & "quick.result_title") = "Z.AI - Response"
     
     ' Model selector
-    m_translations(L & "model.prompt") = "Select z.ai model:" & vbCrLf & vbCrLf & _
-        "Available models:" & vbCrLf & _
-        "  glm-4-plus  (default, fast)" & vbCrLf & _
-        "  glm-4-long  (long context)" & vbCrLf & _
-        "  glm-4       (standard)" & vbCrLf & _
-        "  glm-3-turbo (fastest)"
-    m_translations(L & "model.current") = "Current: "
+    m_translations(L & "model.prompt") = "Select an AI model. glm-4.7-flash = free:"
+    m_translations(L & "model.current") = "Current model: {0}"
     m_translations(L & "model.title") = "Z.AI - Model Selection"
-    m_translations(L & "model.changed") = "Model changed to: "
+    m_translations(L & "model.changed") = "Model changed to: {0}"
     
     ' About
     m_translations(L & "about.text") = _
         "Z.AI Excel Add-in" & vbCrLf & _
-        "Version: 1.0.0" & vbCrLf & vbCrLf & _
+        "Version: 5.0" & vbCrLf & vbCrLf & _
         "AI assistant integrated with Microsoft Excel." & vbCrLf & _
         "Uses the z.ai platform (Zhipu AI) for" & vbCrLf & _
         "intelligent spreadsheet editing." & vbCrLf & vbCrLf & _

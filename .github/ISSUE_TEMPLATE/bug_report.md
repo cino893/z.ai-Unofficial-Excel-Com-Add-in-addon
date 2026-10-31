@@ -25,11 +25,11 @@ assignees: ''
 <!-- If applicable, add screenshots to help explain your problem -->
 
 ## Environment
-- **Add-in Version**: [e.g., 2.0.0 - check in Z.AI → About]
+- **Add-in Version**: [e.g., 5.0.0 - check in Z.AI → About]
 - **Excel Version**: [e.g., Excel 2021, Microsoft 365]
 - **Windows Version**: [e.g., Windows 11 23H2]
 - **.NET Version**: [e.g., .NET 8.0.1]
-- **Z.AI Model Used**: [e.g., glm-4-flash, glm-4-plus]
+- **Z.AI Model Used**: [e.g., glm-4.7-flash, glm-4.5]
 
 ## Error Messages
 <!-- If you see error messages, paste them here -->

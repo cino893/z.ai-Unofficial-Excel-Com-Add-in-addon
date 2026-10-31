@@ -20,6 +20,8 @@
 - **[⬇ Pobierz najnowszy .xll](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases/latest/download/ZaiExcelAddin-AddIn64-packed.xll)**
 - [Wszystkie wydania](https://github.com/cino893/z.ai-Unofficial-Excel-Com-Add-in-addon/releases)
 
+Wydania GitHub dołączają spakowane pliki `.xll` (64-bit oraz 32-bit, jeśli powstanie) przez Actions (`release.yml`). Aktualna wersja produktu to **5.0.0**.
+
 ## Instalacja
 
 1. Pobierz plik `.xll` powyżej
@@ -56,7 +58,7 @@
 
 ✨ **Najważniejsze:**
 
-- 🤖 **Automatyzacja AI** — 28 narzędzi Excel do czytania, pisania, formatowania, tworzenia wykresów i więcej
+- 🤖 **Automatyzacja AI** — 31 narzędzi Excel do czytania, pisania, formatowania, wykresów, tabel przestawnych i więcej
 - 💬 **Czat w Panelu Bocznym** — Piękny interfejs WPF z animacją pisania i emoji
 - 🆓 **Darmowy** — Licencja open-source MIT, działa z darmowymi modelami Z.AI
 - 🌍 **Wielojęzyczny** — 8 języków (EN, PL, DE, FR, ES, UK, ZH, JA)
@@ -67,22 +69,24 @@
 
 | Narzędzie | Opis |
 |-----------|------|
-| `read_cell` / `write_cell` | Odczyt/zapis komórki |
-| `read_range` / `write_range` | Odczyt/zapis zakresu (tablice 2D) |
-| `get_sheet_info` | Wymiary arkusza, nagłówki, zakres użyty |
-| `get_workbook_info` | Arkusze w skoroszycie, ścieżka pliku |
-| `format_range` | Czcionka, kolory, ramki, wyrównanie, scalanie |
-| `insert_formula` | Wstawianie formuł Excel |
+| `read_cell` / `write_cell` | Odczyt/zapis komórki (`write_cell` zapisuje liczby jako wartości numeryczne) |
+| `read_range` / `write_range` | Odczyt/zapis zakresu (`read_range` ogranicza do 500 wierszy) |
+| `get_sheet_info` | Wymiary, nagłówki, próbka danych, flagi wykresów/pivotów/filtrów |
+| `get_workbook_info` | Arkusze, ścieżka pliku, liczba cache'y przestawnych |
+| `format_range` | Czcionka (w tym podkreślenie / nazwa), kolory, ramki, wyrównanie, scalanie |
+| `insert_formula` | Wstawianie formuł Excel z opcjonalnym `fill_to` (AutoFill) |
 | `sort_range` | Sortowanie danych po kolumnie |
 | `add_sheet` | Dodawanie arkusza |
 | `delete_rows` / `insert_rows` | Usuwanie/wstawianie wierszy |
+| `delete_columns` / `insert_columns` | Usuwanie/wstawianie kolumn |
 | `create_chart` | Tworzenie wykresów (kolumnowy, słupkowy, liniowy, kołowy, punktowy, obszarowy) |
 | `delete_chart` / `list_charts` | Usuwanie lub lista wykresów |
 | `create_pivot_table` | Tworzenie tabeli przestawnej z polami wierszy/kolumn/wartości |
-| `move_table` | Przenoszenie zakresu danych lub tabeli przestawnej na inny arkusz |
+| `move_pivot_table` | Przenoszenie tabeli przestawnej (Location, potem odtworzenie z PivotCache) |
+| `modify_pivot_table` | Konfiguracja pól wierszy/kolumn/wartości/stron na istniejącej tabeli |
 | `auto_filter` | Zastosowanie lub usunięcie AutoFiltra na zakresie |
 | `find_replace` | Znajdź i zamień wartości w arkuszu |
-| `conditional_format` | Formatowanie warunkowe (podświetlanie, skala kolorów, paski danych) |
+| `conditional_format` | Skala kolorów, paski danych, zestawy ikon, formuła, wartość komórki i inne |
 | `copy_range` | Kopiowanie zakresu do innej lokalizacji (wartości lub z formatowaniem) |
 | `rename_sheet` / `delete_sheet` | Zmiana nazwy lub usuwanie arkusza |
 | `freeze_panes` | Zablokowanie/odblokowanie okienek w danej komórce |
@@ -100,33 +104,46 @@ cd src
 dotnet build -c Release
 ```
 
-Wynik: `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+Wynik (Excel-DNA 1.9.0 packed XLL): `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`  
+CI używa `dotnet publish src/ZaiExcelAddin.csproj -c Release -o src/publish`.
 
 ## Struktura projektu
 
 ```
 dodatek-z-ai-opus/
-├── src/                            # .NET 8 COM Add-in (ExcelDNA)
-│   ├── ZaiExcelAddin.csproj        # Projekt C#
+├── src/                            # .NET 8 COM Add-in (ExcelDNA) — zalecany
+│   ├── ZaiExcelAddin.csproj        # Projekt C# (wersja 5.0.0)
 │   ├── AddIn.cs                    # Punkt wejścia (IExcelAddIn)
 │   ├── RibbonController.cs         # Wstążka + Custom Task Pane
+│   ├── i18n/                       # 8 plików JSON języków
 │   ├── Models/
-│   │   └── ChatMessage.cs          # Model wiadomości czatu
+│   │   └── ChatMessage.cs
 │   ├── Services/
-│   │   ├── AuthService.cs          # Klucz API (rejestr Windows)
-│   │   ├── ConversationService.cs  # Pętla tool-calling + wykrywanie pętli
-│   │   ├── DebugLogger.cs          # Logowanie do pliku
-│   │   ├── ExcelSkillService.cs    # 28 narzędzi Excel
-│   │   ├── I18nService.cs          # 8 języków
-│   │   └── ZaiApiService.cs        # Klient HTTP Z.AI + katalog modeli
+│   │   ├── AuthService.cs
+│   │   ├── ConversationService.cs  # Pętla tool-calling (max 45 rund)
+│   │   ├── DebugLogger.cs
+│   │   ├── ExcelSkillService*.cs   # 31 narzędzi Excel
+│   │   ├── I18nService.cs
+│   │   └── ZaiApiService.cs
 │   └── UI/
-│       ├── ChatPanel.xaml/.cs      # Panel czatu WPF
-│       ├── ChatPaneHost.cs         # Host WinForms dla CTP (COM-visible)
-│       ├── WpfLoginDialog.xaml/.cs # Dialog logowania WPF
-│       └── WpfSelectDialog.xaml/.cs# Dialog wyboru WPF
-├── legacy/                         # v1.0 VBA (zdeprecjonowany)
-├── show-reel.gif                   # Animacja demo
-├── dodatek-z-ai-opus.sln          # Plik solution
+│       ├── ChatPanel.xaml/.cs
+│       ├── ChatPaneHost.cs
+│       ├── WpfLoginDialog.xaml/.cs
+│       └── WpfSelectDialog.xaml/.cs
+├── legacy/                         # Dodatek VBA z parytetem funkcji COM
+│   ├── build.vbs / build.ps1 / build.bat
+│   ├── modExcelSkills.bas          # JSON narzędzi + dispatch
+│   ├── modExcelSkillsOps.bas       # Dane/arkusz/format/wykres/filtr
+│   ├── modExcelSkillsPivot.bas     # Narzędzia tabel przestawnych
+│   ├── modConversation.bas
+│   ├── modZaiAPI.bas / modAuth.bas / modI18n.bas / modRibbon.bas
+│   ├── frmZaiChat.frm
+│   └── i18n/                       # Te same JSON co src/i18n
+├── tests/                          # Testy offline (bez Excela)
+├── .github/workflows/              # ci.yml + release.yml
+├── CHANGELOG.md
+├── show-reel.gif
+├── dodatek-z-ai-opus.sln
 └── README.md
 ```
 
@@ -139,7 +156,7 @@ dodatek-z-ai-opus/
 └──────────────┘                          │
                                 ┌─────────▼─────────┐
                                 │ ConversationService │  pętla tool-calling
-                                │  (max 15 rund,      │  + wykrywanie duplikatów
+                                │  (max 45 rund,      │  + wykrywanie duplikatów
                                 │   detekcja pętli)   │
                                 └─────────┬─────────┘
                                           │
@@ -147,13 +164,13 @@ dodatek-z-ai-opus/
                      │                    │                    │
               ┌──────▼──────┐    ┌───────▼───────┐    ┌──────▼───────┐
               │  ChatPanel   │    │ ExcelSkillSvc  │    │  I18nService  │
-              │  (WPF CTP)   │    │  (28 narzędzi) │    │  (8 języków)  │
+              │  (WPF CTP)   │    │  (31 narzędzi) │    │  (8 języków)  │
               └─────────────┘    └───────────────┘    └──────────────┘
 ```
 
-## Stara wersja (v1.0 — VBA)
+## Wersja VBA (parytet funkcji)
 
-Oryginalna wersja VBA (`.xlam`) znajduje się w katalogu [`legacy/`](legacy/). Nie jest już rozwijana — została w pełni zastąpiona wersją .NET powyżej. Aby ją zbudować: `cscript legacy\build.vbs`.
+Katalog [`legacy/`](legacy/) to **utrzymywany dodatek VBA** z tymi samymi 31 narzędziami Excel, pętlą 45 rund, 8 językami i katalogiem modeli co dodatek COM .NET. Zalecana instalacja to nadal spakowany `.xll`. Aby zbudować wersję VBA na komputerze z Excelem: `cscript legacy\build.vbs` (kopiuje też `legacy\i18n\` obok `.xlam`).
 
 ## Licencja
 

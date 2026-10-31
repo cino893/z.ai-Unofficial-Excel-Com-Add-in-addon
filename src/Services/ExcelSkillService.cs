@@ -157,6 +157,16 @@ public partial class ExcelSkillService
                 },
                 new JsonArray { "start_column" }),
 
+            MakeTool("insert_columns",
+                "Insert one or more blank columns at a specified position",
+                new JsonObject
+                {
+                    ["start_column"] = PropString("First column letter where to insert e.g. C"),
+                    ["count"] = PropNumber("Number of columns to insert (default: 1)"),
+                    ["sheet"] = PropString("Sheet name (optional)")
+                },
+                new JsonArray { "start_column" }),
+
             MakeTool("create_chart",
                 "Create a chart from data range. Use list_charts first to check existing charts, and delete_chart to remove old ones before creating new.",
                 new JsonObject
@@ -436,6 +446,7 @@ public partial class ExcelSkillService
                 "delete_rows" => SkillDeleteRows(args),
                 "insert_rows" => SkillInsertRows(args),
                 "delete_columns" => SkillDeleteColumns(args),
+                "insert_columns" => SkillInsertColumns(args),
                 "create_chart" => SkillCreateChart(args),
                 "delete_chart" => SkillDeleteChart(args),
                 "list_charts" => SkillListCharts(args),
@@ -497,23 +508,75 @@ public partial class ExcelSkillService
     private static dynamic GetTargetSheet(JsonNode args)
     {
         dynamic app = GetApp();
-        var sheetName = args["sheet"]?.GetValue<string>();
+        var sheetName = Str(args["sheet"]);
         if (!string.IsNullOrEmpty(sheetName))
             return app.ActiveWorkbook.Worksheets[sheetName];
         return app.ActiveSheet;
     }
 
     private static string Str(JsonNode? node, string fallback = "")
-        => node?.GetValue<string>() ?? fallback;
+    {
+        if (node == null) return fallback;
+        if (node is JsonValue jv)
+        {
+            if (jv.TryGetValue<string>(out var s)) return s;
+            if (jv.TryGetValue<double>(out var d))
+                return d.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            if (jv.TryGetValue<bool>(out var b)) return b ? "true" : "false";
+        }
+        return node.ToString() ?? fallback;
+    }
 
     private static int Int(JsonNode? node, int fallback = 0)
-        => node?.GetValue<int>() ?? fallback;
+    {
+        if (node == null) return fallback;
+        if (node is JsonValue jv)
+        {
+            if (jv.TryGetValue<int>(out var i)) return i;
+            if (jv.TryGetValue<long>(out var l)) return (int)l;
+            if (jv.TryGetValue<double>(out var d)) return (int)d;
+            if (jv.TryGetValue<string>(out var s))
+            {
+                if (int.TryParse(s, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out var pi))
+                    return pi;
+                if (double.TryParse(s, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out var pd))
+                    return (int)pd;
+            }
+        }
+        return fallback;
+    }
 
     private static double Dbl(JsonNode? node, double fallback = 0)
-        => node?.GetValue<double>() ?? fallback;
+    {
+        if (node == null) return fallback;
+        if (node is JsonValue jv)
+        {
+            if (jv.TryGetValue<double>(out var d)) return d;
+            if (jv.TryGetValue<int>(out var i)) return i;
+            if (jv.TryGetValue<long>(out var l)) return l;
+            if (jv.TryGetValue<string>(out var s) &&
+                double.TryParse(s, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var pd))
+                return pd;
+        }
+        return fallback;
+    }
 
     private static bool Bool(JsonNode? node, bool fallback = false)
-        => node?.GetValue<bool>() ?? fallback;
+    {
+        if (node == null) return fallback;
+        if (node is JsonValue jv)
+        {
+            if (jv.TryGetValue<bool>(out var b)) return b;
+            if (jv.TryGetValue<string>(out var s) && bool.TryParse(s, out var pb))
+                return pb;
+            if (jv.TryGetValue<int>(out var i)) return i != 0;
+            if (jv.TryGetValue<double>(out var d)) return d != 0;
+        }
+        return fallback;
+    }
 
     private static string EscapeJson(string s)
         => JsonSerializer.Serialize(s)[1..^1]; // strips surrounding quotes

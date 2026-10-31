@@ -30,7 +30,7 @@
   "model.current": "現在のモデル：{0}",
   "model.title": "モデル選択",
   "model.changed": "モデルを変更しました：{0}",
-  "about.text": "Z.AI Excel アドイン\nバージョン 2.0\n\nMicrosoft Excel 用 AI アシスタント。\nZhipuAI GLM モデルで動作。\n\n⚠️ 免責事項：\nこれは非公式アドインです。\nz.ai / Zhipu AI とは無関係です。",
+  "about.text": "Z.AI Excel アドイン\nバージョン 5.0\n\nMicrosoft Excel 用 AI アシスタント。\nZhipuAI GLM モデルで動作。\n\n⚠️ 免責事項：\nこれは非公式アドインです。\nz.ai / Zhipu AI とは無関係です。",
   "about.title": "Z.AI について",
   "conv.status_round": "ラウンド {0}",
   "conv.status_exec": "ツール実行中：{0}",

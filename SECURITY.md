@@ -6,8 +6,9 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 2.x.x   | :white_check_mark: |
-| 1.x.x   | :x: (Legacy VBA)   |
+| 5.x.x   | :white_check_mark: (current COM + VBA parity) |
+| 2.x.x   | :white_check_mark: (previous COM line) |
+| 1.x.x   | :x: (historical VBA only) |
 
 ## Reporting a Vulnerability
 
@@ -45,10 +46,10 @@ Please include as much of the following information as possible:
 
 ### API Key Security
 
-- **Never commit your API key** to version control
+- **Never commit your API key** to version control (`.env` is gitignored; tests read `ZAI_API_KEY` from the environment)
 - **Store API keys securely** (the add-in stores keys in Windows Registry, encrypted by Windows DPAPI)
 - **Use API keys with minimal required permissions**
-- **Rotate API keys regularly**
+- **Rotate API keys regularly**, including if a key was ever committed to a fork, gist, or CI log
 - **Monitor API key usage** via the [Z.AI billing page](https://z.ai/manage-apikey/billing)
 
 ### Excel File Security

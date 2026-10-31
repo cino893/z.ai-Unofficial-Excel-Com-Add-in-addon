@@ -16,6 +16,6 @@ assignees: ''
 <!-- If applicable, describe what you've already attempted -->
 
 ## Environment (if relevant)
-- **Add-in Version**: [e.g., 2.0.0]
+- **Add-in Version**: [e.g., 5.0.0]
 - **Excel Version**: [e.g., Excel 2021]
 - **Windows Version**: [e.g., Windows 11]

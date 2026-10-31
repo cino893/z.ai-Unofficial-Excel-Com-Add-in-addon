@@ -12,8 +12,19 @@ Private Const REG_VAL_MODEL As String = "Model"
 Private m_cachedApiKey As String
 
 ' --- Save API key to Registry ---
+Public Function SanitizeApiKey(ByVal key As String) As String
+    Dim i As Long, ch As Long, result As String
+    result = ""
+    For i = 1 To Len(key)
+        ch = AscW(Mid$(key, i, 1)) And &HFFFF&
+        If ch >= 32 And ch <= 126 Then result = result & Mid$(key, i, 1)
+    Next i
+    SanitizeApiKey = result
+End Function
+
 Public Sub SaveApiKey(ByVal apiKey As String)
     On Error GoTo ErrHandler
+    apiKey = SanitizeApiKey(apiKey)
     Dim wsh As Object
     Set wsh = CreateObject("WScript.Shell")
     wsh.RegWrite REG_KEY & REG_VAL_APIKEY, apiKey, "REG_SZ"
@@ -34,7 +45,7 @@ Public Function LoadApiKey() As String
     On Error GoTo ErrHandler
     Dim wsh As Object
     Set wsh = CreateObject("WScript.Shell")
-    m_cachedApiKey = wsh.RegRead(REG_KEY & REG_VAL_APIKEY)
+    m_cachedApiKey = SanitizeApiKey(CStr(wsh.RegRead(REG_KEY & REG_VAL_APIKEY)))
     LoadApiKey = m_cachedApiKey
     LogDebug "API key loaded from registry"
     Exit Function
@@ -74,7 +85,7 @@ Public Function LoadModel() As String
     LoadModel = wsh.RegRead(REG_KEY & REG_VAL_MODEL)
     Exit Function
 ErrHandler:
-    LoadModel = "glm-4-plus"
+    LoadModel = ZAI_DEFAULT_MODEL
 End Function
 
 ' --- Validate API key by making a test call ---
@@ -89,7 +100,9 @@ Public Function ValidateApiKey(ByVal apiKey As String) As Boolean
     url = ZAI_API_BASE & "/chat/completions"
     
     Dim body As String
-    body = "{""model"":""glm-4-plus"",""messages"":[{""role"":""user"",""content"":""Hi""}],""max_tokens"":5}"
+    apiKey = SanitizeApiKey(apiKey)
+    
+    body = "{""model"":""glm-4.7-flash"",""messages"":[{""role"":""user"",""content"":""Hi""}],""max_tokens"":5}"
     
     http.Open "POST", url, False
     http.setRequestHeader "Content-Type", "application/json"
@@ -138,8 +151,8 @@ Public Sub ShowLogin()
         Exit Sub
     End If
     
-    ' Clean up the key
-    apiKey = Trim(apiKey)
+    ' Clean up the key (printable ASCII only, matching COM SanitizeKey)
+    apiKey = SanitizeApiKey(Trim(apiKey))
     
     ' Validate
     Application.StatusBar = T("auth.validating")

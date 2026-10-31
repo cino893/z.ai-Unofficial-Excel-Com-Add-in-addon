@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag (e.g. v5)"
+        required: true
+        default: "v5"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish GitHub Release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      # ExcelDna.AddIn 1.9.0 expected packed outputs after publish to src/publish:
+      #   ZaiExcelAddin-AddIn64-packed.xll
+      #   ZaiExcelAddin-AddIn-packed.xll (32-bit, if produced)
+      - name: Publish COM add-in
+        run: dotnet publish src/ZaiExcelAddin.csproj -c Release -o src/publish
+      - name: Collect packed XLLs
+        id: pack
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem -Path . -Recurse -Filter "*packed.xll" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+          $files | ForEach-Object { Write-Host "packed: $_" }
+          "files=$($files -join ' ')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Resolve tag and title
+        id: meta
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $tag = "${{ github.event.inputs.version }}"
+          } else {
+            $tag = "${{ github.ref_name }}"
+          }
+          if ($tag -eq "v5") {
+            $name = "Com Release V5"
+          } else {
+            $name = "Com Release $tag"
+          }
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "name=$name" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: CHANGELOG excerpt
+        id: notes
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $ver = $tag.TrimStart("v")
+          $notes = "See CHANGELOG.md for $tag."
+          if (Test-Path CHANGELOG.md) {
+            $text = Get-Content CHANGELOG.md -Raw
+            $pattern = "(?ms)^##[^\n]*($tag|5\.0\.0|$ver)[^\n]*\n(.*?)(?=^## |\z)"
+            $m = [regex]::Match($text, $pattern)
+            if ($m.Success) { $notes = $m.Value.Trim() }
+          }
+          $path = "release-notes.md"
+          Set-Content -Path $path -Value $notes -Encoding utf8
+          "path=$path" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.meta.outputs.tag }}"
+          $name = "${{ steps.meta.outputs.name }}"
+          $sha = "${{ github.sha }}"
+          $files = @(Get-ChildItem -Path . -Recurse -Filter "*packed.xll" -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName })
+          $ghArgs = @("release", "create", $tag, "--title", $name, "--notes-file", "release-notes.md", "--target", $sha)
+          if ($files.Count -gt 0) { $ghArgs += $files }
+          gh @ghArgs
