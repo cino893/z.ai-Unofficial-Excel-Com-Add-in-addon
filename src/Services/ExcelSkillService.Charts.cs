@@ -169,7 +169,7 @@ public partial class ExcelSkillService
         {
             foreach (var f in rowFields)
             {
-                dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                dynamic pf = pt.PivotFields(Str(f));
                 pf.Orientation = 1; // xlRowField
             }
         }
@@ -180,7 +180,7 @@ public partial class ExcelSkillService
         {
             foreach (var f in colFields)
             {
-                dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                dynamic pf = pt.PivotFields(Str(f));
                 pf.Orientation = 2; // xlColumnField
             }
         }
@@ -201,7 +201,7 @@ public partial class ExcelSkillService
         {
             foreach (var f in valFields)
             {
-                dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                dynamic pf = pt.PivotFields(Str(f));
                 pf.Orientation = 4; // xlDataField
                 pf.Function = xlFunc;
             }
@@ -223,14 +223,14 @@ public partial class ExcelSkillService
     {
         dynamic app = GetApp();
         dynamic wb = app.ActiveWorkbook;
-        var sheetFilter = args["sheet"]?.GetValue<string>();
+        var sheetFilter = Str(args["sheet"]);
 
         var pivots = new JsonArray();
         var errors = new JsonArray();
         foreach (dynamic ws in wb.Worksheets)
         {
             string wsName = ws.Name;
-            if (sheetFilter != null && !wsName.Equals(sheetFilter, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(sheetFilter) && !wsName.Equals(sheetFilter, StringComparison.OrdinalIgnoreCase))
                 continue;
 
             try
@@ -538,7 +538,7 @@ public partial class ExcelSkillService
             {
                 try
                 {
-                    dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                    dynamic pf = pt.PivotFields(Str(f));
                     pf.Orientation = 1; // xlRowField
                     changes++;
                 }
@@ -557,7 +557,7 @@ public partial class ExcelSkillService
             {
                 try
                 {
-                    dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                    dynamic pf = pt.PivotFields(Str(f));
                     pf.Orientation = 2; // xlColumnField
                     changes++;
                 }
@@ -586,7 +586,7 @@ public partial class ExcelSkillService
             {
                 try
                 {
-                    dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                    dynamic pf = pt.PivotFields(Str(f));
                     pf.Orientation = 4; // xlDataField
                     pf.Function = xlFunc;
                     changes++;
@@ -606,7 +606,7 @@ public partial class ExcelSkillService
             {
                 try
                 {
-                    dynamic pf = pt.PivotFields(f!.GetValue<string>());
+                    dynamic pf = pt.PivotFields(Str(f));
                     pf.Orientation = 3; // xlPageField
                     changes++;
                 }

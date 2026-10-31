@@ -1,5 +1,8 @@
+using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using ExcelDna.Integration;
 
 namespace ZaiExcelAddin.Services;
@@ -472,6 +475,10 @@ public partial class ExcelSkillService
         }
         catch (Exception ex)
         {
+            // Let Execute() retry once on VBA_E_IGNORE (Excel busy).
+            if (IsExcelBusy(ex))
+                throw;
+
             var errorObj = new JsonObject { ["error"] = ex.Message };
 
             // Contextual hints for common COM errors
@@ -499,6 +506,18 @@ public partial class ExcelSkillService
             AddIn.Logger.ToolCall(toolName, argsJson, error);
             return error;
         }
+    }
+
+    private static bool IsExcelBusy(Exception ex)
+    {
+        for (Exception? e = ex; e != null; e = e.InnerException)
+        {
+            if (e is COMException cx && cx.HResult == VBA_E_IGNORE)
+                return true;
+            if (e.HResult == VBA_E_IGNORE)
+                return true;
+        }
+        return false;
     }
 
     // ======================== SKILL IMPLEMENTATIONS ========================
@@ -537,11 +556,9 @@ public partial class ExcelSkillService
             if (jv.TryGetValue<double>(out var d)) return (int)d;
             if (jv.TryGetValue<string>(out var s))
             {
-                if (int.TryParse(s, System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out var pi))
+                if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pi))
                     return pi;
-                if (double.TryParse(s, System.Globalization.NumberStyles.Any,
-                        System.Globalization.CultureInfo.InvariantCulture, out var pd))
+                if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var pd))
                     return (int)pd;
             }
         }
@@ -557,8 +574,7 @@ public partial class ExcelSkillService
             if (jv.TryGetValue<int>(out var i)) return i;
             if (jv.TryGetValue<long>(out var l)) return l;
             if (jv.TryGetValue<string>(out var s) &&
-                double.TryParse(s, System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture, out var pd))
+                double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var pd))
                 return pd;
         }
         return fallback;
@@ -576,6 +592,36 @@ public partial class ExcelSkillService
             if (jv.TryGetValue<double>(out var d)) return d != 0;
         }
         return fallback;
+    }
+
+    // Coerce only canonical invariant numbers. Reject leading zeros (ZIP/IDs),
+    // 16+ digit integers (Excel double precision), NaN, and Infinity.
+    private static readonly Regex NumericCellPattern = new(
+        @"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    internal static bool TryCoerceNumericCell(string? value, out double num)
+    {
+        num = 0;
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+        var t = value.Trim();
+        if (!NumericCellPattern.IsMatch(t))
+            return false;
+
+        var intPart = t.TrimStart('-');
+        var expIdx = intPart.IndexOfAny(['e', 'E']);
+        if (expIdx >= 0)
+            intPart = intPart[..expIdx];
+        var dotIdx = intPart.IndexOf('.');
+        if (dotIdx >= 0)
+            intPart = intPart[..dotIdx];
+        if (intPart.Length > 15)
+            return false;
+
+        if (!double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out num))
+            return false;
+        return !double.IsNaN(num) && !double.IsInfinity(num);
     }
 
     private static string EscapeJson(string s)

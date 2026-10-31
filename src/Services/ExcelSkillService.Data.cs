@@ -33,8 +33,7 @@ public partial class ExcelSkillService
         string value = Str(args["value"]);
 
         JsonNode written;
-        if (double.TryParse(value, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var num))
+        if (TryCoerceNumericCell(value, out var num))
         {
             ws.Range[cell].Value = num;
             written = JsonValue.Create(num);
@@ -355,7 +354,7 @@ public partial class ExcelSkillService
         var colsNode = args["columns"]?.AsArray();
         if (colsNode != null && colsNode.Count > 0)
         {
-            var colArray = colsNode.Select(c => c!.GetValue<int>()).ToArray();
+            var colArray = colsNode.Select(c => Int(c)).ToArray();
             rng.RemoveDuplicates(Columns: colArray, Header: hasHeaders ? 1 : 2);
         }
         else
