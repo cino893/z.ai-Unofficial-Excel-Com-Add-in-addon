@@ -23,6 +23,7 @@ jobs:
           python3 tests/test_tool_parity.py
           python3 tests/test_i18n.py
           python3 tests/test_vwb.py
+          python3 tests/test_review_invariants.py
         # Live test_api.py is skipped unless ZAI_API_KEY is set; do not fail CI without a key.
         # VBA .xlam cannot be built on GitHub (requires Excel COM). Excel COM tests are skipped.
 

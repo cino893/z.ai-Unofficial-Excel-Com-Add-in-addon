@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tests.vwb import VWB  # noqa: E402
+from tests.vwb import VWB, coerce_numeric_cell  # noqa: E402
 
 
 ALL_TOOLS = [
@@ -35,6 +35,20 @@ def _seed(wb: VWB) -> None:
             ["A", "X", 1, 10],
         ],
     })
+
+
+class CoerceTests(unittest.TestCase):
+    def test_canonical_numbers(self):
+        self.assertEqual(coerce_numeric_cell("0"), 0)
+        self.assertEqual(coerce_numeric_cell("15"), 15)
+        self.assertEqual(coerce_numeric_cell("1.0"), 1)
+        self.assertEqual(coerce_numeric_cell("-2.5"), -2.5)
+        self.assertEqual(coerce_numeric_cell("1e2"), 100)
+
+    def test_rejected_as_text(self):
+        for raw in ("00123", "012", "+15", "1.", ".5", "1,234",
+                    "1234567890123456", "  15 apples", "NaN", "Infinity"):
+            self.assertEqual(coerce_numeric_cell(raw), raw, raw)
 
 
 class VwbTests(unittest.TestCase):
@@ -115,6 +129,40 @@ class VwbTests(unittest.TestCase):
         r2 = wb.exec("write_cell", {"cell": "A2", "value": "hello"})
         self.assertEqual(r2["value"], "hello")
 
+    def test_write_cell_preserves_leading_zeros_and_long_ids(self):
+        wb = VWB()
+        zip_code = wb.exec("write_cell", {"cell": "A1", "value": "00123"})
+        self.assertEqual(zip_code["value"], "00123")
+        long_id = wb.exec("write_cell", {"cell": "A2", "value": "1234567890123456"})
+        self.assertEqual(long_id["value"], "1234567890123456")
+        plus = wb.exec("write_cell", {"cell": "A3", "value": "+15"})
+        self.assertEqual(plus["value"], "+15")
+        plain = wb.exec("write_cell", {"cell": "A4", "value": "15"})
+        self.assertEqual(plain["value"], 15)
+
+    def test_write_range_keeps_numeric_strings(self):
+        wb = VWB()
+        wb.exec("write_range", {"start_cell": "A1", "data": [["00123", 4], ["1.0", "hello"]]})
+        rng = wb.exec("read_range", {"range": "A1:B2"})
+        self.assertEqual(rng["data"][0][0], "00123")
+        self.assertEqual(rng["data"][0][1], 4)
+        self.assertEqual(rng["data"][1][0], "1.0")
+        self.assertEqual(rng["data"][1][1], "hello")
+
+    def test_remove_duplicates_actually_dedupes(self):
+        wb = VWB()
+        wb.exec("write_range", {
+            "start_cell": "A1",
+            "data": [["h"], ["a"], ["a"], ["b"], ["a"]],
+        })
+        r = wb.exec("remove_duplicates", {"range": "A1:A5", "columns": [1], "has_headers": True})
+        self.assertTrue(r["success"])
+        self.assertEqual(r["rows_before"], 4)
+        self.assertEqual(r["rows_after"], 2)
+        self.assertEqual(r["rows_removed"], 2)
+        data = wb.exec("read_range", {"range": "A1:A3"})["data"]
+        self.assertEqual([row[0] for row in data], ["h", "a", "b"])
+
     def test_read_range_truncation(self):
         wb = VWB()
         data = [[i] for i in range(1, 602)]
@@ -166,7 +214,10 @@ class VwbTests(unittest.TestCase):
 
 
 def main() -> int:
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(VwbTests)
+    loader = unittest.defaultTestLoader
+    suite = unittest.TestSuite()
+    suite.addTests(loader.loadTestsFromTestCase(CoerceTests))
+    suite.addTests(loader.loadTestsFromTestCase(VwbTests))
     result = unittest.TextTestRunner(verbosity=2).run(suite)
     return 0 if result.wasSuccessful() else 1
 

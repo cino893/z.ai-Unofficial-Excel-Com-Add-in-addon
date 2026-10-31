@@ -30,7 +30,7 @@
   "model.current": "当前模型：{0}",
   "model.title": "选择模型",
   "model.changed": "模型已更改为：{0}",
-  "about.text": "Z.AI Excel 插件\n版本 5.0\n\n适用于 Microsoft Excel 的 AI 助手。\n由 ZhipuAI GLM 模型驱动。\n\n⚠️ 免责声明：\n这是一个非官方插件。\n与 z.ai / 智谱AI 无关。",
+  "about.text": "Z.AI Excel 插件\n版本 5.0.0\n\n适用于 Microsoft Excel 的 AI 助手。\n由 ZhipuAI GLM 模型驱动。\n\n⚠️ 免责声明：\n这是一个非官方插件。\n与 z.ai / 智谱AI 无关。",
   "about.title": "关于 Z.AI",
   "conv.status_round": "第 {0} 轮",
   "conv.status_exec": "正在执行工具：{0}",

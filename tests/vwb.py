@@ -1,7 +1,34 @@
 """Virtual workbook used by offline skill tests and optional live API tests."""
 from __future__ import annotations
 
+import math
+import re
 from typing import Any
+
+# Same rule as COM TryCoerceNumericCell / VBA TryCoerceNumericCell.
+NUMERIC_CELL_RE = re.compile(r"^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$")
+
+
+def coerce_numeric_cell(v: Any) -> Any:
+    if isinstance(v, bool) or v is None:
+        return v
+    if isinstance(v, (int, float)):
+        return v
+    s = str(v).strip()
+    if not NUMERIC_CELL_RE.fullmatch(s):
+        return v
+    int_part = s.lstrip("-").split("e", 1)[0].split("E", 1)[0].split(".", 1)[0]
+    if len(int_part) > 15:
+        return v
+    try:
+        n = float(s)
+    except ValueError:
+        return v
+    if math.isnan(n) or math.isinf(n):
+        return v
+    if n == int(n) and abs(n) <= 2**53:
+        return int(n)
+    return n
 
 
 class VWB:
@@ -48,18 +75,7 @@ class VWB:
         return r1, c1, r2, c2
 
     def _coerce(self, v):
-        if isinstance(v, bool) or v is None:
-            return v
-        if isinstance(v, (int, float)):
-            return v
-        s = str(v)
-        try:
-            n = float(s)
-            if n == int(n):
-                return int(n)
-            return n
-        except (TypeError, ValueError):
-            return v
+        return coerce_numeric_cell(v)
 
     def exec(self, name: str, args: dict) -> dict:
         s = args.get("sheet")
@@ -134,7 +150,9 @@ class VWB:
                 w = 0
                 for ri, row in enumerate(data):
                     for ci, val in enumerate(row):
-                        self.sheets.setdefault(sn, {})[(r + ri, c + ci)] = self._coerce(val)
+                        # JSON strings stay text (parity with COM write_range).
+                        stored = val if isinstance(val, str) else val
+                        self.sheets.setdefault(sn, {})[(r + ri, c + ci)] = stored
                         w += 1
                 return {"success": True, "start_cell": args["start_cell"], "rows_written": len(data), "cells_written": w}
             if name == "format_range":
@@ -339,7 +357,43 @@ class VWB:
                 self.frozen[sn] = cell
                 return {"success": True, "action": "frozen", "cell": cell}
             if name == "remove_duplicates":
-                return {"success": True, "range": args["range"], "rows_before": 3, "rows_after": 2, "rows_removed": 1}
+                r1, c1, r2, c2 = self._pr(args["range"])
+                has_headers = args.get("has_headers", True)
+                cols = args.get("columns")
+                start = r1 + (1 if has_headers else 0)
+                header = [
+                    self.sheets.get(sn, {}).get((r1, c))
+                    for c in range(c1, c2 + 1)
+                ] if has_headers else []
+                seen: set[tuple] = set()
+                kept: list[list] = []
+                for r in range(start, r2 + 1):
+                    row = [self.sheets.get(sn, {}).get((r, c)) for c in range(c1, c2 + 1)]
+                    if cols:
+                        key = tuple(row[i - 1] if 0 < i <= len(row) else None for i in cols)
+                    else:
+                        key = tuple(row)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    kept.append(row)
+                for r in range(r1, r2 + 1):
+                    for c in range(c1, c2 + 1):
+                        self.sheets.get(sn, {}).pop((r, c), None)
+                out_rows = ([header] if has_headers else []) + kept
+                for ri, row in enumerate(out_rows):
+                    for ci, val in enumerate(row):
+                        if val is not None:
+                            self.sheets.setdefault(sn, {})[(r1 + ri, c1 + ci)] = val
+                before = r2 - start + 1
+                after = len(kept)
+                return {
+                    "success": True,
+                    "range": args["range"],
+                    "rows_before": before,
+                    "rows_after": after,
+                    "rows_removed": before - after,
+                }
             if name == "set_validation":
                 self.validations[f"{sn}:{args['range']}"] = args
                 return {"success": True, "range": args["range"], "type": args.get("type")}

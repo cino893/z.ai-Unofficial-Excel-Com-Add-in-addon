@@ -1,5 +1,16 @@
 # Changelog
 
+## v5 review fixes (5.0.0)
+
+- VBA i18n loads embedded EN/PL first, then overlays JSON so VBA-only keys (`menu.quick`, `quick.*`, …) are not dropped.
+- `write_cell` no longer treats ZIP codes / long IDs (`00123`, 16+ digit integers) as numbers.
+- COM `ExecuteInner` rethrows Excel-busy `0x800AC472` so the existing one-shot retry in `Execute` actually runs.
+- VBA `read_range` treats a one-row range as 2D (Excel `Range.Value`) with a 1D fallback.
+- VBA `write_range` keeps JSON strings as text, matching COM.
+- Pivot field names and `remove_duplicates` columns use the tolerant `Str` / `Int` helpers (`1.0` no longer crashes `GetValue`).
+- VBA conversation loop pumps `DoEvents` after each tool so Stop can abort between calls.
+- Virtual-workbook tests now use the same numeric coerce rules and actually dedupe rows.
+
 ## v5 / 5.0.0
 
 ### COM add-in (.NET / Excel-DNA)
@@ -32,5 +43,5 @@
 
 ### Tests and docs
 
-- Offline tests: `tests/test_tool_parity.py`, `tests/test_i18n.py`, `tests/test_vwb.py`.
+- Offline tests: `tests/test_tool_parity.py`, `tests/test_i18n.py`, `tests/test_vwb.py`, `tests/test_review_invariants.py`.
 - README / CONTRIBUTING / SECURITY updated for v5, 31 tools, 45 rounds, and maintained VBA parity.

@@ -54,7 +54,11 @@ cd src
 dotnet build -c Release
 ```
 
-The output will be in `src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+Excel-DNA default packed output after `dotnet build -c Release`:
+
+`src\bin\Release\net8.0-windows\publish\ZaiExcelAddin-AddIn64-packed.xll`
+
+CI / `release.yml` use `dotnet publish src/ZaiExcelAddin.csproj -c Release -o src/publish`, so packed XLLs land in `src/publish/`.
 
 ### Project Structure
 
@@ -102,7 +106,7 @@ When adding new Excel automation skills:
 
 ## Testing
 
-- Offline (no Excel, no API key): `python3 tests/test_tool_parity.py`, `python3 tests/test_i18n.py`, `python3 tests/test_vwb.py`
+- Offline (no Excel, no API key): `python3 tests/test_tool_parity.py`, `python3 tests/test_i18n.py`, `python3 tests/test_vwb.py`, `python3 tests/test_review_invariants.py`
 - Live API tests: `ZAI_API_KEY=... python3 test_api.py` (skipped with exit 0 when the env var is unset)
 - Manual testing in Excel for COM (`.xll`) and VBA (`cscript legacy\build.vbs`)
 - Test with different Excel versions and workbook formats (.xlsx, .xlsm, .xlsb)
