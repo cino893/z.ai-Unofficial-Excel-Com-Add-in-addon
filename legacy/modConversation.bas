@@ -393,6 +393,7 @@ Private Function RunToolLoopInner() As String
                 Else
                     LogInfo "Executing tool: " & funcName
                     toolResult = ExecuteToolCall(funcName, funcArgs)
+                    DoEvents
                 End If
                 
                 Dim toolMsg As Object

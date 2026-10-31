@@ -46,7 +46,7 @@ Public Function SkillWriteCell(ByVal args As Object) As String
     Dim raw As String
     raw = ArgStr(args, "value")
     Dim num As Double
-    If TryParseInvNumber(raw, num) Then
+    If TryCoerceNumericCell(raw, num) Then
         ws.Range(cell).value = num
         SkillWriteCell = "{""success"":true," & JsonStr("cell", cell) & _
             ",""value"":" & Replace(CStr(num), ",", ".") & "}"
@@ -88,40 +88,16 @@ Public Function SkillReadRange(ByVal args As Object) As String
         Dim values As Variant
         values = readRange.value
         Dim r As Long, c As Long
-        If rows = 1 Then
-            ' 1-row range: Excel returns 1D array
+        ' Multi-cell Range.Value is 2D (even for one row / one column); fall back to 1D.
+        For r = 1 To rows
+            If r > 1 Then dataJson = dataJson & ","
             dataJson = dataJson & "["
             For c = 1 To cols
                 If c > 1 Then dataJson = dataJson & ","
-                If IsArray(values) Then
-                    dataJson = dataJson & CellToJson(values(c))
-                Else
-                    dataJson = dataJson & CellToJson(values)
-                End If
+                dataJson = dataJson & CellToJson(RangeValueAt(values, r, c))
             Next c
             dataJson = dataJson & "]"
-        ElseIf cols = 1 Then
-            For r = 1 To rows
-                If r > 1 Then dataJson = dataJson & ","
-                dataJson = dataJson & "["
-                If IsArray(values) Then
-                    dataJson = dataJson & CellToJson(values(r, 1))
-                Else
-                    dataJson = dataJson & CellToJson(values)
-                End If
-                dataJson = dataJson & "]"
-            Next r
-        Else
-            For r = 1 To rows
-                If r > 1 Then dataJson = dataJson & ","
-                dataJson = dataJson & "["
-                For c = 1 To cols
-                    If c > 1 Then dataJson = dataJson & ","
-                    dataJson = dataJson & CellToJson(values(r, c))
-                Next c
-                dataJson = dataJson & "]"
-            Next r
-        End If
+        Next r
     End If
     dataJson = dataJson & "]"
     
@@ -133,6 +109,24 @@ Public Function SkillReadRange(ByVal args As Object) As String
     End If
     result = result & "}"
     SkillReadRange = result
+End Function
+
+Private Function RangeValueAt(ByVal values As Variant, ByVal r As Long, ByVal c As Long) As Variant
+    On Error Resume Next
+    RangeValueAt = values(r, c)
+    If Err.Number = 0 Then Exit Function
+    Err.Clear
+    If r = 1 Then
+        RangeValueAt = values(c)
+        If Err.Number = 0 Then Exit Function
+        Err.Clear
+    End If
+    If c = 1 Then
+        RangeValueAt = values(r)
+        If Err.Number = 0 Then Exit Function
+        Err.Clear
+    End If
+    RangeValueAt = Empty
 End Function
 
 Private Function CellToJson(ByVal cellVal As Variant) As String
@@ -189,12 +183,8 @@ Public Function SkillWriteRange(ByVal args As Object) As String
                 ElseIf VarType(node) = vbBoolean Then
                     values(r, c) = node
                 Else
-                    Dim n As Double
-                    If VarType(node) = vbString And TryParseInvNumber(CStr(node), n) Then
-                        values(r, c) = n
-                    Else
-                        values(r, c) = CStr(node)
-                    End If
+                    ' Keep JSON strings as text (parity with COM write_range).
+                    values(r, c) = CStr(node)
                 End If
             End If
         Next c

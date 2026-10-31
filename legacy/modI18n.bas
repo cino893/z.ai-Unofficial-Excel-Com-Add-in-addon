@@ -52,6 +52,10 @@ Public Sub InitI18n()
     Set m_translations = CreateObject("Scripting.Dictionary")
     m_loadedFromJson = False
     
+    ' Embedded EN/PL first so VBA-only keys (quick.*, menu.quick, ...) survive JSON overlay.
+    LoadTranslations_EN
+    LoadTranslations_PL
+    
     Dim langs As Variant
     langs = Array("en", "pl", "de", "fr", "es", "uk", "zh", "ja")
     Dim i As Long
@@ -61,9 +65,6 @@ Public Sub InitI18n()
         If LoadJsonLanguage(CStr(langs(i))) Then loaded = loaded + 1
     Next i
     m_loadedFromJson = (loaded > 0)
-    
-    If Not LangHasKeys("en") Then LoadTranslations_EN
-    If Not LangHasKeys("pl") Then LoadTranslations_PL
     
     Dim saved As String
     saved = LoadSavedLanguage()
@@ -76,18 +77,6 @@ Public Sub InitI18n()
     m_initialized = True
     LogInfo "I18n initialized, language: " & m_lang & " json=" & m_loadedFromJson
 End Sub
-
-Private Function LangHasKeys(ByVal lang As String) As Boolean
-    LangHasKeys = False
-    If m_translations Is Nothing Then Exit Function
-    Dim k As Variant
-    For Each k In m_translations.Keys
-        If Left$(CStr(k), Len(lang) + 1) = lang & "." Then
-            LangHasKeys = True
-            Exit Function
-        End If
-    Next k
-End Function
 
 Private Function LoadJsonLanguage(ByVal lang As String) As Boolean
     On Error GoTo Fail
@@ -246,6 +235,7 @@ Private Sub LoadTranslations_PL()
     m_translations(L & "menu.clearlog") = "&Wyczysc log"
     m_translations(L & "menu.about") = "&O dodatku Z.AI"
     m_translations(L & "menu.language") = "&Jezyk / Language"
+    m_translations(L & "menu.add_tokens") = "Doladuj tokeny"
     
     ' Chat form
     m_translations(L & "chat.title") = "Z.AI - Asystent Excel"
@@ -264,6 +254,9 @@ Private Sub LoadTranslations_PL()
         "  - Sformatuj naglowki na pogrubione" & vbCrLf & _
         "  - Posortuj dane wedlug kolumny C malejaco" & vbCrLf & _
         "  - Stworz wykres kolumnowy z danych A1:B5"
+    m_translations(L & "chat.stop") = "Stop"
+    m_translations(L & "chat.continue") = "Kontynuuj"
+    m_translations(L & "chat.continuing") = "Wznawianie wykonywania..."
     
     ' Auth
     m_translations(L & "auth.need_login") = "Musisz najpierw sie zalogowac (podac klucz API)."
@@ -300,7 +293,7 @@ Private Sub LoadTranslations_PL()
     ' About
     m_translations(L & "about.text") = _
         "Z.AI Excel Add-in" & vbCrLf & _
-        "Wersja: 5.0" & vbCrLf & vbCrLf & _
+        "Wersja: 5.0.0" & vbCrLf & vbCrLf & _
         "Asystent AI zintegrowany z Microsoft Excel." & vbCrLf & _
         "Wykorzystuje platforme z.ai (Zhipu AI) do" & vbCrLf & _
         "inteligentnej edycji arkuszy kalkulacyjnych." & vbCrLf & vbCrLf & _
@@ -324,6 +317,11 @@ Private Sub LoadTranslations_PL()
     m_translations(L & "conv.no_response") = "Brak odpowiedzi z serwera"
     m_translations(L & "conv.error") = "[Blad]: "
     m_translations(L & "conv.no_assistant") = "Brak odpowiedzi asystenta"
+    m_translations(L & "conv.cancelled") = "Wykonywanie zatrzymane przez uzytkownika."
+    m_translations(L & "conv.continue_prompt") = "Poprzednie wykonanie zostalo przerwane. NIE powtarzaj ukonczonych krokow."
+    m_translations(L & "conv.round_info") = "[Runda {{CurrentRound}}/{{MaxToolRounds}}]"
+    m_translations(L & "conv.final_round_prompt") = "To twoja ostatnia odpowiedz przed limitem {{MaxToolRounds}} rund narzedzi."
+    m_translations(L & "conv.generic_failure") = "Cos poszlo nie tak — asystent przerwalo dzialanie bez odpowiedzi."
     
     ' Debug
     m_translations(L & "debug.no_log") = "Brak pliku logu."
@@ -331,10 +329,16 @@ Private Sub LoadTranslations_PL()
     
     ' Errors
     m_translations(L & "error.generic") = "Blad: "
+    m_translations(L & "error.balance_empty") = "Saldo API jest puste. Doladuj tokeny na z.ai."
+    m_translations(L & "error.content_filter") = "Wiadomosc zablokowana przez filtr tresci."
+    m_translations(L & "error.invalid_key") = "Nieprawidlowy klucz API."
+    m_translations(L & "error.rate_limit") = "Zbyt wiele zapytan. Poczekaj chwile."
+    m_translations(L & "error.api_generic") = "Wystapil blad API."
     
     ' Language
     m_translations(L & "lang.changed") = "Jezyk zmieniony na: Polski"
     m_translations(L & "lang.title") = "Z.AI - Jezyk"
+    m_translations(L & "lang.select_prompt") = "Wybierz jezyk interfejsu:"
     
     ' System prompt
     m_translations(L & "system.prompt") = _
@@ -371,6 +375,7 @@ Private Sub LoadTranslations_EN()
     m_translations(L & "menu.clearlog") = "&Clear Log"
     m_translations(L & "menu.about") = "&About Z.AI"
     m_translations(L & "menu.language") = "&Language / Jezyk"
+    m_translations(L & "menu.add_tokens") = "Add Tokens"
     
     ' Chat form
     m_translations(L & "chat.title") = "Z.AI - Excel Assistant"
@@ -389,6 +394,9 @@ Private Sub LoadTranslations_EN()
         "  - Format headers as bold" & vbCrLf & _
         "  - Sort data by column C descending" & vbCrLf & _
         "  - Create a column chart from data A1:B5"
+    m_translations(L & "chat.stop") = "Stop"
+    m_translations(L & "chat.continue") = "Continue"
+    m_translations(L & "chat.continuing") = "Continuing execution..."
     
     ' Auth
     m_translations(L & "auth.need_login") = "You need to log in first (provide API key)."
@@ -425,7 +433,7 @@ Private Sub LoadTranslations_EN()
     ' About
     m_translations(L & "about.text") = _
         "Z.AI Excel Add-in" & vbCrLf & _
-        "Version: 5.0" & vbCrLf & vbCrLf & _
+        "Version: 5.0.0" & vbCrLf & vbCrLf & _
         "AI assistant integrated with Microsoft Excel." & vbCrLf & _
         "Uses the z.ai platform (Zhipu AI) for" & vbCrLf & _
         "intelligent spreadsheet editing." & vbCrLf & vbCrLf & _
@@ -449,6 +457,11 @@ Private Sub LoadTranslations_EN()
     m_translations(L & "conv.no_response") = "No response from server"
     m_translations(L & "conv.error") = "[Error]: "
     m_translations(L & "conv.no_assistant") = "No assistant response"
+    m_translations(L & "conv.cancelled") = "Execution stopped by user."
+    m_translations(L & "conv.continue_prompt") = "The previous execution was interrupted. Do NOT redo completed steps."
+    m_translations(L & "conv.round_info") = "[Round {{CurrentRound}}/{{MaxToolRounds}}]"
+    m_translations(L & "conv.final_round_prompt") = "This is your final response before the {{MaxToolRounds}} tool-round limit."
+    m_translations(L & "conv.generic_failure") = "Something went wrong — the assistant stopped without producing a response."
     
     ' Debug
     m_translations(L & "debug.no_log") = "No log file found."
@@ -456,10 +469,16 @@ Private Sub LoadTranslations_EN()
     
     ' Errors
     m_translations(L & "error.generic") = "Error: "
+    m_translations(L & "error.balance_empty") = "Your API balance is empty. Add tokens at z.ai."
+    m_translations(L & "error.content_filter") = "Your message was blocked by the content filter."
+    m_translations(L & "error.invalid_key") = "Invalid API key."
+    m_translations(L & "error.rate_limit") = "Too many requests. Please wait a moment."
+    m_translations(L & "error.api_generic") = "An API error occurred."
     
     ' Language
     m_translations(L & "lang.changed") = "Language changed to: English"
     m_translations(L & "lang.title") = "Z.AI - Language"
+    m_translations(L & "lang.select_prompt") = "Select interface language:"
     
     ' System prompt
     m_translations(L & "system.prompt") = _

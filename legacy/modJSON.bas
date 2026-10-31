@@ -493,3 +493,37 @@ Public Function TryParseInvNumber(ByVal s As String, ByRef outNum As Double) As 
     outNum = Val(t)
     TryParseInvNumber = True
 End Function
+
+' Coerce only canonical invariant numbers for Excel cells.
+' Rejects leading zeros (ZIP/IDs), 16+ digit integers, and non-canonical forms.
+Public Function TryCoerceNumericCell(ByVal s As String, ByRef outNum As Double) As Boolean
+    Dim t As String
+    t = Trim$(s)
+    If t = "" Then Exit Function
+    
+    Dim re As Object
+    Set re = CreateObject("VBScript.RegExp")
+    re.Pattern = "^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$"
+    If Not re.Test(t) Then Exit Function
+    
+    Dim intPart As String
+    intPart = t
+    If Left$(intPart, 1) = "-" Then intPart = Mid$(intPart, 2)
+    Dim ePos As Long
+    ePos = InStr(1, intPart, "e", vbTextCompare)
+    If ePos > 0 Then intPart = Left$(intPart, ePos - 1)
+    Dim dPos As Long
+    dPos = InStr(intPart, ".")
+    If dPos > 0 Then intPart = Left$(intPart, dPos - 1)
+    If Len(intPart) > 15 Then Exit Function
+    
+    On Error Resume Next
+    Err.Clear
+    outNum = Val(t)
+    If Err.Number <> 0 Then
+        Err.Clear
+        Exit Function
+    End If
+    On Error GoTo 0
+    TryCoerceNumericCell = True
+End Function

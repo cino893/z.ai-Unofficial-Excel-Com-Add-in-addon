@@ -183,7 +183,8 @@ Sub CopyI18nFolder()
 End Sub
 
 ' ============================================================================
-' Helper: Create Chat UserForm programmatically
+' Helper: Create Chat UserForm programmatically.
+' Keep UserForm_Resize layout numbers in sync with legacy/frmZaiChat.frm.
 ' ============================================================================
 Sub CreateChatForm(proj)
     On Error Resume Next
@@ -387,7 +388,7 @@ Sub CreateChatForm(proj)
     code = code & "    Dim w As Single, h As Single" & vbCrLf
     code = code & "    w = Me.InsideWidth" & vbCrLf
     code = code & "    h = Me.InsideHeight" & vbCrLf
-    code = code & "    If w < 200 Or h < 200 Then Exit Sub" & vbCrLf
+    code = code & "    If w < 240 Or h < 240 Then Exit Sub" & vbCrLf
     code = code & "    Dim inputH As Single: inputH = 50" & vbCrLf
     code = code & "    Dim statusH As Single: statusH = 18" & vbCrLf
     code = code & "    Dim btnRowH As Single: btnRowH = 25" & vbCrLf
