@@ -26,7 +26,7 @@
   "auth.not_logged": "Sie sind nicht angemeldet. Bitte melden Sie sich zuerst an.",
   "auth.confirm_logout": "Möchten Sie sich wirklich abmelden?",
   "auth.logged_out": "Sie wurden abgemeldet.",
-  "model.prompt": "KI-Modell wählen.\n💰 = kostenpflichtig, ⚡ = günstig/kostenlos:",
+  "model.prompt": "KI-Modell wählen. glm-4.7-flash ist kostenlos (Standard); GLM-5.3 steht in der Liste.\n💰 = kostenpflichtig, ⚡ = günstig/kostenlos:",
   "model.current": "Aktuelles Modell: {0}",
   "model.title": "Modell auswählen",
   "model.changed": "Modell geändert zu: {0}",

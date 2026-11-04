@@ -174,13 +174,17 @@ public class ZaiApiService
         new("glm-4.5-flash",       "0",    "0",    1),
         new("glm-4.7-flashx",      "0.07", "0.4",  10),
         new("glm-4-32b-0414-128k", "0.1",  "0.1",  11),
+        new("glm-5.3-flash",       "0.15", "0.50", 12),
         new("glm-4.5-air",         "0.2",  "1.1",  20),
+        new("glm-5.3-flashx",      "0.37", "1.25", 21),
         new("glm-4.5",             "0.6",  "2.2",  30),
         new("glm-4.6",             "0.6",  "2.2",  31),
         new("glm-4.7",             "0.6",  "2.2",  32),
         new("glm-4.5-airx",        "1.1",  "4.5",  40),
         new("glm-5",               "1",    "3.2",  41),
-        new("glm-5-code",          "1.2",  "5",    42),
+        new("glm-5.1",             "1.4",  "4.4",  42),
+        new("glm-5.2",             "1.4",  "4.4",  43),
+        new("glm-5.3",             "1.4",  "4.4",  44),
         new("glm-4.5-x",           "2.2",  "8.9",  50),
     ];
 
@@ -203,11 +207,12 @@ public class ZaiApiService
         apiModels.Add("glm-4.5-flash");
 
         var result = new List<(string Id, string Display)>();
-        // First add catalog models in order
+        // Always show the full static catalog. Remove() still drops known ids so
+        // leftover API-only models can be appended below (GetAvailableModels is incomplete).
         foreach (var cat in ModelCatalog)
         {
-            if (apiModels.Remove(cat.Id) || true) // show all catalog models
-                result.Add((cat.Id, cat.DisplayLine));
+            apiModels.Remove(cat.Id);
+            result.Add((cat.Id, cat.DisplayLine));
         }
         // Add any API models not in catalog
         foreach (var id in apiModels.OrderBy(x => x))
@@ -264,5 +269,6 @@ public class ZaiApiService
     }
 
     public static readonly string[] DefaultModels =
-        ["glm-4.7-flash", "glm-4.5-flash", "glm-4.5-air", "glm-4.5", "glm-4.6", "glm-4.7", "glm-5"];
+        ["glm-4.7-flash", "glm-4.5-flash", "glm-5.3-flash", "glm-5.3-flashx",
+         "glm-4.5-air", "glm-4.5", "glm-4.6", "glm-4.7", "glm-5", "glm-5.1", "glm-5.2", "glm-5.3"];
 }

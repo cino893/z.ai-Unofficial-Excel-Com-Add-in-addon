@@ -26,7 +26,7 @@
   "auth.not_logged": "You are not logged in. Please log in first.",
   "auth.confirm_logout": "Are you sure you want to log out?",
   "auth.logged_out": "You have been logged out.",
-  "model.prompt": "Select an AI model.\n💰 = paid, ⚡ = cheap/free:",
+  "model.prompt": "Select an AI model. glm-4.7-flash is free (default); GLM-5.3 is in the picker.\n💰 = paid, ⚡ = cheap/free:",
   "model.current": "Current model: {0}",
   "model.title": "Select Model",
   "model.changed": "Model changed to: {0}",

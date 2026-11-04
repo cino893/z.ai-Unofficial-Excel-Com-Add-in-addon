@@ -26,7 +26,7 @@
   "auth.not_logged": "Nie jesteś zalogowany. Najpierw się zaloguj.",
   "auth.confirm_logout": "Czy na pewno chcesz się wylogować?",
   "auth.logged_out": "Zostałeś wylogowany.",
-  "model.prompt": "Wybierz model AI.\n💰 = płatny, ⚡ = tani/darmowy:",
+  "model.prompt": "Wybierz model AI. glm-4.7-flash jest darmowy (domyślny); GLM-5.3 jest na liście.\n💰 = płatny, ⚡ = tani/darmowy:",
   "model.current": "Aktualny model: {0}",
   "model.title": "Wybór modelu",
   "model.changed": "Model zmieniony na: {0}",

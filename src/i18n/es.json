@@ -26,7 +26,7 @@
   "auth.not_logged": "No has iniciado sesión. Por favor, inicia sesión primero.",
   "auth.confirm_logout": "¿Estás seguro de que quieres cerrar sesión?",
   "auth.logged_out": "Has cerrado sesión.",
-  "model.prompt": "Seleccione un modelo de IA.\n💰 = de pago, ⚡ = económico/gratis:",
+  "model.prompt": "Seleccione un modelo de IA. glm-4.7-flash es gratis (predeterminado); GLM-5.3 está en la lista.\n💰 = de pago, ⚡ = económico/gratis:",
   "model.current": "Modelo actual: {0}",
   "model.title": "Seleccionar modelo",
   "model.changed": "Modelo cambiado a: {0}",

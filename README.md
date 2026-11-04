@@ -42,7 +42,7 @@ GitHub Releases attach the packed 64-bit (and 32-bit, when produced) `.xll` file
 
 1. **Login** — click **Z.AI → Login**, paste your API key (the [key management page](https://z.ai/manage-apikey/apikey-list) opens automatically)
 2. **Chat** — click **💬 Chat** to open the side panel; ask the AI to work with your spreadsheet
-3. **Model** — click **Model** to pick from 12 available models (free ⚡ to premium 💎)
+3. **Model** — click **Model** to pick from available models (free ⚡ to premium 💎)
 4. **Language** — click **Language** to switch UI language (PL, EN, DE, FR, ES, UK, ZH, JA)
 5. **Add Tokens** — opens the [billing page](https://z.ai/manage-apikey/billing) to top up your balance
 
