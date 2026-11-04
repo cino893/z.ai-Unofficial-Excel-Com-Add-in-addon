@@ -20,7 +20,7 @@ from tests.vwb import VWB  # noqa: E402
 API_BASE = "https://api.z.ai/api/paas/v4"
 API_KEY = os.environ.get("ZAI_API_KEY", "").strip()
 MODEL = os.environ.get("ZAI_MODEL", "glm-4.7-flash")
-MAX_ROUNDS = 30
+MAX_ROUNDS = 45
 MAX_SAME_REPEATS = 2
 
 
@@ -208,7 +208,7 @@ def main() -> int:
     print("Z.AI API Test")
     if not API_KEY:
         print("ZAI_API_KEY is not set; skipping live API tests.")
-        print("Offline coverage: python3 tests/test_vwb.py tests/test_tool_parity.py tests/test_i18n.py")
+        print("Offline coverage: python3 tests/test_vwb.py tests/test_tool_parity.py tests/test_i18n.py tests/test_review_invariants.py tests/test_model_catalog.py")
         return 0
 
     print(f"  Model: {MODEL}, Max rounds: {MAX_ROUNDS}\n")

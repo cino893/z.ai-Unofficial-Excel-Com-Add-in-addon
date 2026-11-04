@@ -5,6 +5,7 @@
 - Add `glm-5.3-flash` ($0.15/$0.50), `glm-5.3-flashx` ($0.37/$1.25), `glm-5.1` / `glm-5.2` / `glm-5.3` ($1.4/$4.4) from [Z.AI pricing](https://docs.z.ai/guides/overview/pricing).
 - Drop `glm-5-code` (not on the current pricing page).
 - Default remains free `glm-4.7-flash`. GLM-5.3 is in the model picker.
+- Offline catalog parity: `tests/test_model_catalog.py`.
 
 ## v5 review fixes (5.0.0)
 
@@ -49,5 +50,5 @@
 
 ### Tests and docs
 
-- Offline tests: `tests/test_tool_parity.py`, `tests/test_i18n.py`, `tests/test_vwb.py`, `tests/test_review_invariants.py`.
+- Offline tests: `tests/test_tool_parity.py`, `tests/test_i18n.py`, `tests/test_vwb.py`, `tests/test_review_invariants.py`, `tests/test_model_catalog.py`.
 - README / CONTRIBUTING / SECURITY updated for v5, 31 tools, 45 rounds, and maintained VBA parity.

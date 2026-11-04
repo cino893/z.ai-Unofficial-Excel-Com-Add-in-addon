@@ -106,7 +106,7 @@ When adding new Excel automation skills:
 
 ## Testing
 
-- Offline (no Excel, no API key): `python3 tests/test_tool_parity.py`, `python3 tests/test_i18n.py`, `python3 tests/test_vwb.py`, `python3 tests/test_review_invariants.py`
+- Offline (no Excel, no API key): `python3 tests/test_tool_parity.py`, `python3 tests/test_i18n.py`, `python3 tests/test_vwb.py`, `python3 tests/test_review_invariants.py`, `python3 tests/test_model_catalog.py`
 - Live API tests: `ZAI_API_KEY=... python3 test_api.py` (skipped with exit 0 when the env var is unset)
 - Manual testing in Excel for COM (`.xll`) and VBA (`cscript legacy\build.vbs`)
 - Test with different Excel versions and workbook formats (.xlsx, .xlsm, .xlsb)
