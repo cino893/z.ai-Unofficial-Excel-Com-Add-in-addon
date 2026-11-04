@@ -26,7 +26,7 @@
   "auth.not_logged": "您尚未登录。请先登录。",
   "auth.confirm_logout": "确定要退出登录吗？",
   "auth.logged_out": "您已退出登录。",
-  "model.prompt": "选择AI模型。\n\\U0001f4b0 = 付费，⚡ = 便宜/免费：",
+  "model.prompt": "选择AI模型。glm-4.7-flash 免费（默认）；选择器中有 GLM-5.3。\n\\U0001f4b0 = 付费，⚡ = 便宜/免费：",
   "model.current": "当前模型：{0}",
   "model.title": "选择模型",
   "model.changed": "模型已更改为：{0}",

@@ -26,7 +26,7 @@
   "auth.not_logged": "ログインしていません。先にログインしてください。",
   "auth.confirm_logout": "ログアウトしてもよろしいですか？",
   "auth.logged_out": "ログアウトしました。",
-  "model.prompt": "AIモデルを選択。\n\\U0001f4b0 = 有料、⚡ = 安い/無料：",
+  "model.prompt": "AIモデルを選択。glm-4.7-flash は無料（デフォルト）。選択リストに GLM-5.3 もあります。\n\\U0001f4b0 = 有料、⚡ = 安い/無料：",
   "model.current": "現在のモデル：{0}",
   "model.title": "モデル選択",
   "model.changed": "モデルを変更しました：{0}",

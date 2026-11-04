@@ -42,7 +42,7 @@ Wydania GitHub dołączają spakowane pliki `.xll` (64-bit oraz 32-bit, jeśli p
 
 1. **Login** — kliknij **Z.AI → Login**, wklej klucz API (strona [zarządzania kluczami](https://z.ai/manage-apikey/apikey-list) otworzy się automatycznie)
 2. **Chat** — kliknij **💬 Chat** aby otworzyć panel boczny; poproś AI o pracę z arkuszem
-3. **Model** — kliknij **Model** aby wybrać z 12 modeli (od darmowych ⚡ po premium 💎)
+3. **Model** — kliknij **Model** aby wybrać model (od darmowych ⚡ po premium 💎)
 4. **Język** — kliknij **Language** aby zmienić język interfejsu (PL, EN, DE, FR, ES, UK, ZH, JA)
 5. **Doładuj** — otwiera [stronę płatności](https://z.ai/manage-apikey/billing) do doładowania salda
 

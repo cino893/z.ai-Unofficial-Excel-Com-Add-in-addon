@@ -26,7 +26,7 @@
   "auth.not_logged": "Vous n'êtes pas connecté. Veuillez d'abord vous connecter.",
   "auth.confirm_logout": "Êtes-vous sûr de vouloir vous déconnecter ?",
   "auth.logged_out": "Vous avez été déconnecté.",
-  "model.prompt": "Sélectionnez un modèle IA.\n💰 = payant, ⚡ = économique/gratuit:",
+  "model.prompt": "Sélectionnez un modèle IA. glm-4.7-flash est gratuit (par défaut) ; GLM-5.3 est dans la liste.\n💰 = payant, ⚡ = économique/gratuit:",
   "model.current": "Modèle actuel : {0}",
   "model.title": "Sélection du modèle",
   "model.changed": "Modèle changé en : {0}",

@@ -285,7 +285,7 @@ Private Sub LoadTranslations_PL()
     m_translations(L & "quick.result_title") = "Z.AI - Odpowiedz"
     
     ' Model selector
-    m_translations(L & "model.prompt") = "Wybierz model AI. glm-4.7-flash = darmowy:"
+    m_translations(L & "model.prompt") = "Wybierz model AI. glm-4.7-flash jest darmowy (domyslny); GLM-5.3 jest na liscie:"
     m_translations(L & "model.current") = "Aktualny model: {0}"
     m_translations(L & "model.title") = "Z.AI - Wybor modelu"
     m_translations(L & "model.changed") = "Model zmieniony na: {0}"
@@ -425,7 +425,7 @@ Private Sub LoadTranslations_EN()
     m_translations(L & "quick.result_title") = "Z.AI - Response"
     
     ' Model selector
-    m_translations(L & "model.prompt") = "Select an AI model. glm-4.7-flash = free:"
+    m_translations(L & "model.prompt") = "Select an AI model. glm-4.7-flash is free (default); GLM-5.3 is in the picker:"
     m_translations(L & "model.current") = "Current model: {0}"
     m_translations(L & "model.title") = "Z.AI - Model Selection"
     m_translations(L & "model.changed") = "Model changed to: {0}"

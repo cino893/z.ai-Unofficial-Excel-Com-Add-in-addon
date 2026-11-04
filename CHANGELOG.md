@@ -1,5 +1,11 @@
 # Changelog
 
+## Model catalog (Nov 2026)
+
+- Add `glm-5.3-flash` ($0.15/$0.50), `glm-5.3-flashx` ($0.37/$1.25), `glm-5.1` / `glm-5.2` / `glm-5.3` ($1.4/$4.4) from [Z.AI pricing](https://docs.z.ai/guides/overview/pricing).
+- Drop `glm-5-code` (not on the current pricing page).
+- Default remains free `glm-4.7-flash`. GLM-5.3 is in the model picker.
+
 ## v5 review fixes (5.0.0)
 
 - VBA i18n loads embedded EN/PL first, then overlays JSON so VBA-only keys (`menu.quick`, `quick.*`, …) are not dropped.

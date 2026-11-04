@@ -194,8 +194,9 @@ Fallback:
 End Function
 
 ' --- Model catalog (id | input | output | sort) ---
+' Bands match COM SortOrder: free <10, budget <30, standard <50, premium >=50.
 Public Function GetModelCatalogCount() As Long
-    GetModelCatalogCount = 12
+    GetModelCatalogCount = 16
 End Function
 
 Public Function GetModelCatalogId(ByVal index As Long) As String
@@ -204,14 +205,18 @@ Public Function GetModelCatalogId(ByVal index As Long) As String
         Case 2: GetModelCatalogId = "glm-4.5-flash"
         Case 3: GetModelCatalogId = "glm-4.7-flashx"
         Case 4: GetModelCatalogId = "glm-4-32b-0414-128k"
-        Case 5: GetModelCatalogId = "glm-4.5-air"
-        Case 6: GetModelCatalogId = "glm-4.5"
-        Case 7: GetModelCatalogId = "glm-4.6"
-        Case 8: GetModelCatalogId = "glm-4.7"
-        Case 9: GetModelCatalogId = "glm-4.5-airx"
-        Case 10: GetModelCatalogId = "glm-5"
-        Case 11: GetModelCatalogId = "glm-5-code"
-        Case 12: GetModelCatalogId = "glm-4.5-x"
+        Case 5: GetModelCatalogId = "glm-5.3-flash"
+        Case 6: GetModelCatalogId = "glm-4.5-air"
+        Case 7: GetModelCatalogId = "glm-5.3-flashx"
+        Case 8: GetModelCatalogId = "glm-4.5"
+        Case 9: GetModelCatalogId = "glm-4.6"
+        Case 10: GetModelCatalogId = "glm-4.7"
+        Case 11: GetModelCatalogId = "glm-4.5-airx"
+        Case 12: GetModelCatalogId = "glm-5"
+        Case 13: GetModelCatalogId = "glm-5.1"
+        Case 14: GetModelCatalogId = "glm-5.2"
+        Case 15: GetModelCatalogId = "glm-5.3"
+        Case 16: GetModelCatalogId = "glm-4.5-x"
         Case Else: GetModelCatalogId = ZAI_DEFAULT_MODEL
     End Select
 End Function
@@ -221,9 +226,9 @@ Public Function GetModelCatalogDisplay(ByVal index As Long) As String
     id = GetModelCatalogId(index)
     If index <= 2 Then
         GetModelCatalogDisplay = "*  " & id & "   —   FREE"
-    ElseIf index < 6 Then
+    ElseIf index < 8 Then
         GetModelCatalogDisplay = "+  " & id & "   —   " & PriceTag(index)
-    ElseIf index < 10 Then
+    ElseIf index < 16 Then
         GetModelCatalogDisplay = "#  " & id & "   —   " & PriceTag(index)
     Else
         GetModelCatalogDisplay = "$  " & id & "   —   " & PriceTag(index)
@@ -235,14 +240,18 @@ Private Function PriceTag(ByVal index As Long) As String
         Case 1, 2: PriceTag = "FREE"
         Case 3: PriceTag = "$0.07→$0.4/MTok"
         Case 4: PriceTag = "$0.1→$0.1/MTok"
-        Case 5: PriceTag = "$0.2→$1.1/MTok"
-        Case 6: PriceTag = "$0.6→$2.2/MTok"
-        Case 7: PriceTag = "$0.6→$2.2/MTok"
+        Case 5: PriceTag = "$0.15→$0.50/MTok"
+        Case 6: PriceTag = "$0.2→$1.1/MTok"
+        Case 7: PriceTag = "$0.37→$1.25/MTok"
         Case 8: PriceTag = "$0.6→$2.2/MTok"
-        Case 9: PriceTag = "$1.1→$4.5/MTok"
-        Case 10: PriceTag = "$1→$3.2/MTok"
-        Case 11: PriceTag = "$1.2→$5/MTok"
-        Case 12: PriceTag = "$2.2→$8.9/MTok"
+        Case 9: PriceTag = "$0.6→$2.2/MTok"
+        Case 10: PriceTag = "$0.6→$2.2/MTok"
+        Case 11: PriceTag = "$1.1→$4.5/MTok"
+        Case 12: PriceTag = "$1→$3.2/MTok"
+        Case 13: PriceTag = "$1.4→$4.4/MTok"
+        Case 14: PriceTag = "$1.4→$4.4/MTok"
+        Case 15: PriceTag = "$1.4→$4.4/MTok"
+        Case 16: PriceTag = "$2.2→$8.9/MTok"
         Case Else: PriceTag = "unknown"
     End Select
 End Function
